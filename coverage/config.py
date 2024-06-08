@@ -214,10 +214,12 @@ class CoverageConfig(TConfigurable, TPluginConfig):
         self._crash: str | None = None
 
         # Defaults for [report]
+        self.classes = False
         self.exclude_list = DEFAULT_EXCLUDE[:]
         self.exclude_also: list[str] = []
         self.fail_under = 0.0
         self.format: str | None = None
+        self.functions = False
         self.ignore_errors = False
         self.include_namespace_packages = False
         self.report_include: list[str] | None = None
@@ -392,10 +394,12 @@ class CoverageConfig(TConfigurable, TPluginConfig):
         ("_crash", "run:_crash"),
 
         # [report]
+        ("classes", "report:classes", "boolean"),
         ("exclude_list", "report:exclude_lines", "regexlist"),
         ("exclude_also", "report:exclude_also", "regexlist"),
         ("fail_under", "report:fail_under", "float"),
         ("format", "report:format"),
+        ("functions", "report:functions", "boolean"),
         ("ignore_errors", "report:ignore_errors", "boolean"),
         ("include_namespace_packages", "report:include_namespace_packages", "boolean"),
         ("partial_always_list", "report:partial_branches_always", "regexlist"),

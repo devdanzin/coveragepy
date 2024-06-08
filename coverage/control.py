@@ -1015,6 +1015,8 @@ class Coverage(TConfigurable):
         precision: int | None = None,
         sort: str | None = None,
         output_format: str | None = None,
+        classes: bool | None = None,
+        functions: bool | None = None,
     ) -> float:
         """Write a textual summary report to `file`.
 
@@ -1079,6 +1081,8 @@ class Coverage(TConfigurable):
             precision=precision,
             sort=sort,
             format=output_format,
+            classes=classes,
+            functions=functions,
         ):
             reporter = SummaryReporter(self)
             return reporter.report(morfs, outfile=file)

@@ -208,6 +208,7 @@ class SummaryReporter:
         # `lines_values` is list of lists of sortable values.
         lines_values = []
 
+        report_on = {"class": self.config.classes, "function": self.config.functions}
         for (fr, analysis) in self.fr_analysis:
             nums = analysis.numbers
 
@@ -219,6 +220,25 @@ class SummaryReporter:
                 args += [analysis.missing_formatted(branches=True)]
             args += [nums.pc_covered]
             lines_values.append(args)
+            if not any(report_on.values()):
+                continue
+            for region in fr.code_regions():
+                if not report_on[region.kind]:
+                    continue
+                num_lines = len(fr.source().splitlines())
+                outside_lines = set(range(1, num_lines + 1))
+                outside_lines -= region.lines
+                narrowed_analysis = analysis.narrow(region.lines)
+                nums = narrowed_analysis.numbers
+                name = f"{fr.relative_filename()}: {region.kind} {region.name}"
+                region_args = [name, nums.n_statements, nums.n_missing]
+                if self.branches:
+                    region_args += [nums.n_branches, nums.n_partial_branches]
+                region_args += [nums.pc_covered_str]
+                if self.config.show_missing:
+                    region_args += [narrowed_analysis.missing_formatted(branches=True)]
+                region_args += [nums.pc_covered]
+                lines_values.append(region_args)
 
         # Line sorting.
         sort_option = (self.config.sort or "name").lower()
