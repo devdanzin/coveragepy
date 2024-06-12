@@ -28,7 +28,7 @@ class ShellSession:
         self.output_filename = output_filename
         self.last_duration: float = 0
         self.foutput = None
-        self.env_vars = {}
+        self.env_vars = {"PATH": os.getenv("PATH")}
 
     def __enter__(self):
         self.foutput = open(self.output_filename, "a", encoding="utf-8")
@@ -225,7 +225,7 @@ class ToxProject(ProjectToTest):
 
     def run_tox(self, env, toxenv, toxargs=""):
         """Run a tox command. Return the duration."""
-        env.shell.run_command(f"{env.python} -m tox -e {toxenv} {toxargs}")
+        env.shell.run_command(f"{env.python} -m tox -v -e {toxenv} {toxargs}")
         return env.shell.last_duration
 
     def run_no_coverage(self, env):
@@ -325,6 +325,8 @@ class ProjectMashumaro(ProjectToTest):
     def prep_environment(self, env):
         env.shell.run_command(f"{env.python} -m pip install .")
         env.shell.run_command(f"{env.python} -m pip install -r requirements-dev.txt")
+        # https://github.com/Fatal1ty/mashumaro/issues/227 :
+        env.shell.run_command(f"{env.python} -m pip install -U typing_extensions==4.11.0")
 
     def run_no_coverage(self, env):
         env.shell.run_command(f"{env.python} -m pytest {self.more_pytest_args}")
@@ -589,6 +591,7 @@ class Experiment:
                     shell.run_command(f"{pyver.command} -m venv {venv_dir}")
                     python = Path.cwd() / f"{venv_dir}/bin/python"
                     shell.run_command(f"{python} -V")
+                    shell.run_command(f"{python} -m pip install -U pip")
                     env = Env(pyver, python, shell)
 
                     with change_dir(proj.dir):
