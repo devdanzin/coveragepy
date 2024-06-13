@@ -686,8 +686,8 @@ class Experiment:
             with proj.shell() as shell:
                 print(f"Prepping project {proj.slug}")
                 shell.print_banner(f"Prepping project {proj.slug}")
+                proj.make_dir()
                 if wipe_dir:
-                    proj.make_dir()
                     proj.get_source(shell)
 
                 for pyver in self.py_versions:
