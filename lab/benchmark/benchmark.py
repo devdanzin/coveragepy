@@ -793,6 +793,7 @@ def run_experiment(
     column: str,
     ratios: Iterable[tuple[str, str, str]] = (),
     num_runs: int = int(sys.argv[1]),
+    wipe_dir: bool = True,
 ):
     """
     Run a benchmarking experiment and print a table of results.
@@ -875,7 +876,8 @@ def run_experiment(
         )
 
     print(f"Removing and re-making {PERF_DIR}")
-    rmrf(PERF_DIR)
+    if wipe_dir:
+        rmrf(PERF_DIR)
 
     with change_dir(PERF_DIR):
         exp = Experiment(

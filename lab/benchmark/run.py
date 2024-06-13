@@ -74,6 +74,7 @@ if 0:
         ratios=[
             (f"3.{v2} vs 3.{v1}", f"python3.{v2}", f"python3.{v1}"),
         ],
+        wipe_dir=False,
     )
 
 if 1:
