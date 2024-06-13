@@ -436,6 +436,19 @@ class ProjectMpmath(ProjectToTest):
     def prep_environment(self, env):
         env.shell.run_command(f"{env.python} -m pip install .")
 
+    def run_no_coverage(self, env):
+        env.shell.run_command(f"{env.python} -m pytest {self.more_pytest_args}")
+        return env.shell.last_duration
+
+    def run_with_coverage(self, env, pip_args, cov_tweaks):
+        env.shell.run_command(
+            f"{env.python} -m pytest --cov=mpmath {self.more_pytest_args}"
+        )
+        duration = env.shell.last_duration
+        report = env.shell.run_command(f"{env.python} -m coverage report --precision=6")
+        print("Results:", report.splitlines()[-1])
+        return duration
+
 
 class ProjectMypy(ToxProject):
     git_url = "https://github.com/python/mypy"
@@ -657,7 +670,7 @@ class Experiment:
         self.projects = projects
         self.result_data: dict[ResultKey, list[float]] = {}
 
-    def run(self, num_runs: int = 3) -> None:
+    def run(self, num_runs: int = 3, wipe_dir: bool = True) -> None:
         total_runs = (
             len(self.projects)
             * len(self.py_versions)
@@ -672,13 +685,15 @@ class Experiment:
             with proj.shell() as shell:
                 print(f"Prepping project {proj.slug}")
                 shell.print_banner(f"Prepping project {proj.slug}")
-                proj.make_dir()
-                proj.get_source(shell)
+                if wipe_dir:
+                    proj.make_dir()
+                    proj.get_source(shell)
 
                 for pyver in self.py_versions:
                     print(f"Making venv for {proj.slug} {pyver.slug}")
                     venv_dir = f"venv_{proj.slug}_{pyver.slug}"
-                    shell.run_command(f"{pyver.command} -m venv {venv_dir}")
+                    if wipe_dir:
+                        shell.run_command(f"{pyver.command} -m venv {venv_dir}")
                     python = Path.cwd() / f"{venv_dir}/bin/python"
                     shell.run_command(f"{python} -V")
                     shell.run_command(f"{python} -m pip install -U pip")
@@ -883,5 +898,5 @@ def run_experiment(
         exp = Experiment(
             py_versions=py_versions, cov_versions=cov_versions, projects=projects
         )
-        exp.run(num_runs=int(num_runs))
+        exp.run(num_runs=int(num_runs), wipe_dir=wipe_dir)
         exp.show_results(rows=rows, column=column, ratios=ratios)
