@@ -36,6 +36,8 @@ from coverage.types import (
 )
 
 # pylint: disable=unused-argument
+# ruff: noqa: ARG002
+
 
 LOG = False
 

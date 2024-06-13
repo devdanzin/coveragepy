@@ -39,7 +39,7 @@ def line_counts(data: CoverageData, fullpath: bool = False) -> dict[str, int]:
     filename_fn: Callable[[str], str]
     if fullpath:
         # pylint: disable=unnecessary-lambda-assignment
-        filename_fn = lambda f: f
+        filename_fn = lambda f: f  # noqa: E731
     else:
         filename_fn = os.path.basename
     for filename in data.measured_files():

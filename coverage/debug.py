@@ -114,11 +114,11 @@ class NoDebugging(DebugControl):
         # pylint: disable=super-init-not-called
         ...
 
-    def should(self, option: str) -> bool:
+    def should(self, option: str) -> bool:  # noqa: ARG002
         """Should we write debug messages?  Never."""
         return False
 
-    def write(self, msg: str, *, exc: BaseException | None = None) -> None:
+    def write(self, msg: str, *, exc: BaseException | None = None) -> None:  # noqa: ARG002
         """This will never be called."""
         raise AssertionError("NoDebugging.write should never be called.")
 

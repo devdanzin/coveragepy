@@ -128,8 +128,8 @@ class PyTracer(TracerCore):
         self,
         frame: FrameType,
         event: str,
-        arg: Any,                               # pylint: disable=unused-argument
-        lineno: TLineNo | None = None,       # pylint: disable=unused-argument
+        arg: Any,                            # pylint: disable=unused-argument  # noqa: ARG002
+        lineno: TLineNo | None = None,       # pylint: disable=unused-argument  # noqa: ARG002
     ) -> TTraceFn | None:
         """The trace function passed to sys.settrace."""
 

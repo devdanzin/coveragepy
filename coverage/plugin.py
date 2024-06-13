@@ -131,7 +131,7 @@ class CoveragePlugin:
     _coverage_plugin_name: str
     _coverage_enabled: bool
 
-    def file_tracer(self, filename: str) -> FileTracer | None: # pylint: disable=unused-argument
+    def file_tracer(self, filename: str) -> FileTracer | None:  # pylint: disable=unused-argument  # noqa: ARG002
         """Get a :class:`FileTracer` object for a file.
 
         Plug-in type: file tracer.
@@ -173,7 +173,7 @@ class CoveragePlugin:
 
     def file_reporter(
         self,
-        filename: str,                  # pylint: disable=unused-argument
+        filename: str,                   # pylint: disable=unused-argument  # noqa: ARG002
     ) -> FileReporter | str:      # str should be Literal["python"]
         """Get the :class:`FileReporter` class to use for a file.
 
@@ -190,7 +190,7 @@ class CoveragePlugin:
 
     def dynamic_context(
         self,
-        frame: FrameType,               # pylint: disable=unused-argument
+        frame: FrameType,                # pylint: disable=unused-argument  # noqa: ARG002
     ) -> str | None:
         """Get the dynamically computed context label for `frame`.
 
@@ -209,7 +209,7 @@ class CoveragePlugin:
 
     def find_executable_files(
         self,
-        src_dir: str,                   # pylint: disable=unused-argument
+        src_dir: str,                    # pylint: disable=unused-argument
     ) -> Iterable[str]:
         """Yield all of the executable files in `src_dir`, recursively.
 
@@ -310,8 +310,8 @@ class FileTracer(CoveragePluginBase):
 
     def dynamic_source_filename(
         self,
-        filename: str,                  # pylint: disable=unused-argument
-        frame: FrameType,               # pylint: disable=unused-argument
+        filename: str,                   # pylint: disable=unused-argument  # noqa: ARG002
+        frame: FrameType,                # pylint: disable=unused-argument  # noqa: ARG002
     ) -> str | None:
         """Get a dynamically computed source file name.
 
@@ -526,7 +526,7 @@ class FileReporter(CoveragePluginBase):
         self,
         start: TLineNo,
         end: TLineNo,
-        executed_arcs: Iterable[TArc] | None = None,     # pylint: disable=unused-argument
+        executed_arcs: Iterable[TArc] | None = None,      # pylint: disable=unused-argument
     ) -> str:
         """Provide an English sentence describing a missing arc.
 

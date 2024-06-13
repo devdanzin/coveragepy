@@ -512,6 +512,7 @@ class Block:
     stack.
     """
     # pylint: disable=unused-argument
+    # ruff: noqa: ARG002
     def process_break_exits(self, exits: set[ArcStart], add_arc: TAddArcFn) -> bool:
         """Process break exits."""
         # Because break can only appear in loops, and most subclasses

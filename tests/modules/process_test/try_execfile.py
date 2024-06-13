@@ -60,7 +60,7 @@ cleaned_sys_path = [os.path.normcase(p) for p in without_same_files(sys.path)]
 
 DATA = "xyzzy"
 
-import __main__
+import __main__  # noqa: E402
 
 def my_function(a: Any) -> str:
     """A function to force execution of module-level values."""
