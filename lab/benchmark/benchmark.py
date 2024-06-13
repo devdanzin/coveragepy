@@ -438,7 +438,7 @@ class ProjectMpmath(ProjectToTest):
         env.shell.run_command(f"{env.python} -m pip install .[develop]")
 
     def run_no_coverage(self, env):
-        env.shell.run_command(f"{env.python} -m pytest")
+        env.shell.run_command(f"{env.python} -m pytest --no-cov")
         return env.shell.last_duration
 
     def run_with_coverage(self, env, pip_args, cov_tweaks):
