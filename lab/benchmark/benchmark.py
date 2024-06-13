@@ -435,7 +435,7 @@ class ProjectMpmath(ProjectToTest):
     git_url = "https://github.com/mpmath/mpmath"
 
     def prep_environment(self, env):
-        env.shell.run_command(f"{env.python} -m pip install .")
+        env.shell.run_command(f"{env.python} -m pip install .[tests]")
 
     def run_no_coverage(self, env):
         env.shell.run_command(f"{env.python} -m pytest")
