@@ -438,12 +438,12 @@ class ProjectMpmath(ProjectToTest):
         env.shell.run_command(f"{env.python} -m pip install .")
 
     def run_no_coverage(self, env):
-        env.shell.run_command(f"{env.python} -m pytest {self.more_pytest_args}")
+        env.shell.run_command(f"{env.python} -m pytest")
         return env.shell.last_duration
 
     def run_with_coverage(self, env, pip_args, cov_tweaks):
         env.shell.run_command(
-            f"{env.python} -m pytest --cov=mpmath {self.more_pytest_args}"
+            f"{env.python} -m pytest --cov=mpmath"
         )
         duration = env.shell.last_duration
         report = env.shell.run_command(f"{env.python} -m coverage report --precision=6")
