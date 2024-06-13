@@ -410,6 +410,59 @@ class ProjectOperator(ProjectToTest):
         return duration
 
 
+class ProjectPygments(ToxProject):
+    git_url = "https://github.com/pygments/pygments"
+
+
+class ProjectRich(ToxProject):
+    git_url = "https://github.com/Textualize/rich"
+
+
+class ProjectTornado(ToxProject):
+    git_url = "https://github.com/tornadoweb/tornado"
+
+
+class ProjectDulwich(ToxProject):
+    git_url = "https://github.com/jelmer/dulwich"
+
+
+class ProjectBlack(ToxProject):
+    git_url = "https://github.com/psf/black"
+
+
+class ProjectMpmath(ProjectToTest):
+    git_url = "https://github.com/mpmath/mpmath"
+
+    def prep_environment(self, env):
+        env.shell.run_command(f"{env.python} -m pip install .")
+
+
+class ProjectMypy(ToxProject):
+    git_url = "https://github.com/python/mypy"
+
+
+class ProjectHtml5lib(ToxProject):
+    git_url = "https://github.com/html5lib/html5lib-python"
+
+
+class ProjectSphinx(ToxProject):
+    git_url = "https://github.com/sphinx-doc/sphinx"
+
+
+class ProjectFabric(ProjectToTest):
+    git_url = "https://github.com/fabric/fabric"
+
+    def prep_environment(self, env):
+        pass
+
+
+class ProjectUrllib3(ProjectToTest):
+    git_url = "https://github.com/urllib3/urllib3"
+
+    def prep_environment(self, env):
+        pass
+
+
 def tweak_toml_coverage_settings(
     toml_file: str, tweaks: Iterable[tuple[str, Any]]
 ) -> Iterator[None]:

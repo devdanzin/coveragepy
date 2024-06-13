@@ -67,7 +67,7 @@ if 0:
             Coverage("753", "coverage==7.5.3"),
         ],
         projects=[
-            ProjectMashumaro(),
+            ProjectMpmath(),
         ],
         rows=["cov", "proj"],
         column="pyver",
