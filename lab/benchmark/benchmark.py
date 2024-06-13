@@ -170,18 +170,19 @@ class ProjectToTest:
     git_url: str | None = None
     slug: str | None = None
 
-    def __init__(self):
+    def __init__(self, wipe_dir: bool = True):
         url_must_exist(self.git_url)
         if not self.slug:
             if self.git_url:
                 self.slug = self.git_url.split("/")[-1]
+        self.wipe_dir = wipe_dir
 
     def shell(self):
         return ShellSession(f"output_{self.slug}.log")
 
     def make_dir(self):
         self.dir = Path(f"work_{self.slug}")
-        if self.dir.exists():
+        if self.wipe_dir and self.dir.exists():
             rmrf(self.dir)
 
     def get_source(self, shell):
