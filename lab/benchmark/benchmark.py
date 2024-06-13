@@ -705,7 +705,75 @@ def run_experiment(
     rows: list[str],
     column: str,
     ratios: Iterable[tuple[str, str, str]] = (),
+    num_runs: int = int(sys.argv[1]),
 ):
+    """
+    Run a benchmarking experiment and print a table of results.
+
+    The arguments specify a collection of Python versions, coverage.py
+    versions, and projects to run.  All the combinations form a matrix, and are
+    run a number of times. The timings are collected and summarized.
+
+    There are three dimensions to the matrix: ``pyver``, ``cov``, and ``proj``.
+    The `rows` argument determines the two dimensions that will produce the
+    rows for the table.  There will be a row for each combination of the two
+    dimensions.
+
+    The `column` argument is the remaining dimension that is used to add
+    columns to the table, one for each item in that dimension.
+
+    For example::
+
+        run_experiment(
+            py_versions=[
+                Python(3, 10),
+                Python(3, 11),
+                Python(3, 12),
+            ],
+            cov__versions=[
+                Coverage("753", "coverage==7.5.3"),
+                CoverageSource("~/ned/coverage"),
+            ],
+            projects=[
+                ProjectBigSlow(),
+                ProjectStrange(),
+            ],
+            rows=["cov", "proj"],
+            column="pyver",
+            ...
+        )
+
+    This will run twelve different test suites: three Python versions times two
+    coverage versions on two different projects.  The coverage versions and
+    project combinations will be rows, so there will be six rows in the table.
+    Each row will have a column naming the coverage version and project used,
+    and then three more columns, one for each Python version.
+
+    Ratios are calculated among the columns using the `ratios` argument. It's a
+    list of triples: the header for the column, and the two slugs from the
+    `column` dimension to compare.
+
+    In our example we could have::
+
+            ratios=[
+                ("3.11 vs 3.10", "python3.11", "python3.10"),
+                ("3.12 vs 3.11", "python3.12", "python3.11"),
+            ],
+
+    This will add two more columns to the table, showing the 3.11 time divided
+    by the 3.10 time, and the 3.12 time divided by the 3.11 time.
+
+    Arguments:
+
+        py_versions: The Python versions to test.
+        cov_versions: The coverage versions to test.
+        projects: The projects to run.
+        rows: A list of strings chosen from `"pyver"`, `"cov"`, and `"proj"`.
+        column: The remaining dimension not used in `rows`.
+        ratios: A list of triples: (title, slug1, slug2).
+        num_runs: The number of times to run each matrix element.
+
+    """
     slugs = [v.slug for v in py_versions + cov_versions + projects]
     if len(set(slugs)) != len(slugs):
         raise Exception(f"Slugs must be unique: {slugs}")
@@ -726,5 +794,5 @@ def run_experiment(
         exp = Experiment(
             py_versions=py_versions, cov_versions=cov_versions, projects=projects
         )
-        exp.run(num_runs=int(sys.argv[1]))
+        exp.run(num_runs=int(num_runs))
         exp.show_results(rows=rows, column=column, ratios=ratios)
