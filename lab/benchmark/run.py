@@ -67,16 +67,16 @@ if 1:
             Coverage("sysmon", "coverage==7.5.3", env_vars={"COVERAGE_CORE": "sysmon"}),
         ],
         projects=[
-            # ProjectSphinx(wipe_dir=True),  # Works, slow
-            ProjectPygments(wipe_dir=True),  # Works
-            # ProjectRich(wipe_dir=True),  # Doesn't work
-            # ProjectTornado(wipe_dir=True),  # Works, tests fail
-            ProjectDulwich(wipe_dir=True),  # Works
-            # ProjectBlack(wipe_dir=True),  # Works, slow
-            # ProjectMpmath(wipe_dir=True),  # Works, slow
-            # ProjectMypy(wipe_dir=True),  # Works, slow
-            ProjectHtml5lib(wipe_dir=True),  # Works
-            ProjectUrllib3(wipe_dir=True),  # Works
+            # ProjectSphinx(),  # Works, slow
+            # ProjectPygments(),  # Works
+            # ProjectRich(),  # Doesn't work
+            # ProjectTornado(),  # Works, tests fail
+            # ProjectDulwich(),  # Works
+            # ProjectBlack(),  # Works, slow
+            # ProjectMpmath(),  # Works, slow
+            # ProjectMypy(),  # Works, slow
+            # ProjectHtml5lib(),  # Works
+            ProjectUrllib3(),  # Works
         ],
         rows=["pyver", "proj"],
         column="cov",
@@ -84,7 +84,7 @@ if 1:
             (f"753%", "753", "nocov"),
             (f"sysmon%", "sysmon", "nocov"),
         ],
-        wipe_dir=True,
+        load=True,
     )
 
 if 0:
