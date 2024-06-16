@@ -171,19 +171,18 @@ class ProjectToTest:
     git_url: str | None = None
     slug: str | None = None
 
-    def __init__(self, wipe_dir: bool = True):
+    def __init__(self):
         url_must_exist(self.git_url)
         if not self.slug:
             if self.git_url:
                 self.slug = self.git_url.split("/")[-1]
-        self.wipe_dir = wipe_dir
 
     def shell(self):
         return ShellSession(f"output_{self.slug}.log")
 
     def make_dir(self):
         self.dir = Path(f"work_{self.slug}")
-        if self.wipe_dir and self.dir.exists():
+        if self.dir.exists():
             rmrf(self.dir)
 
     def get_source(self, shell, retries=5):
@@ -855,7 +854,7 @@ class Experiment:
             return {tuple(k.split()): v for k, v in data.items()}
         return {}
 
-    def run(self, num_runs: int = 3, wipe_dir: bool = True) -> None:
+    def run(self, num_runs: int = 3) -> None:
         total_runs = (
             len(self.projects)
             * len(self.py_versions)
@@ -871,14 +870,12 @@ class Experiment:
                 print(f"Prepping project {proj.slug}")
                 shell.print_banner(f"Prepping project {proj.slug}")
                 proj.make_dir()
-                if wipe_dir:
-                    proj.get_source(shell)
+                proj.get_source(shell)
 
                 for pyver in self.py_versions:
                     print(f"Making venv for {proj.slug} {pyver.slug}")
                     venv_dir = f"venv_{proj.slug}_{pyver.slug}"
-                    if wipe_dir:
-                        shell.run_command(f"{pyver.command} -m venv {venv_dir}")
+                    shell.run_command(f"{pyver.command} -m venv {venv_dir}")
                     python = Path.cwd() / f"{venv_dir}/bin/python"
                     shell.run_command(f"{python} -V")
                     shell.run_command(f"{python} -m pip install -U pip")
@@ -899,7 +896,7 @@ class Experiment:
         for proj, pyver, cov_ver, env in all_runs:
             result_key = (proj.slug, pyver.slug, cov_ver.slug)
             total_run_num = next(total_run_nums)
-            if result_key in self.result_data:
+            if result_key in self.result_data and len(self.result_data[result_key]) >= num_runs:
                 print(f"Skipping {result_key} as results already exist.")
                 continue
 
@@ -1005,7 +1002,6 @@ def run_experiment(
     column: str,
     ratios: Iterable[tuple[str, str, str]] = (),
     num_runs: int = int(sys.argv[1]),
-    wipe_dir: bool = True,
     load: bool = False,
 ):
     """
@@ -1089,13 +1085,12 @@ def run_experiment(
         )
 
     print(f"Removing and re-making {PERF_DIR}")
-    if wipe_dir:
-        rmrf(PERF_DIR)
+    rmrf(PERF_DIR)
 
     cwd = Path.cwd()
     with change_dir(PERF_DIR):
         exp = Experiment(
             py_versions=py_versions, cov_versions=cov_versions, projects=projects, load=load, cwd=cwd
         )
-        exp.run(num_runs=int(num_runs), wipe_dir=wipe_dir)
+        exp.run(num_runs=int(num_runs))
         exp.show_results(rows=rows, column=column, ratios=ratios)
