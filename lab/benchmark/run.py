@@ -54,30 +54,40 @@ if 0:
     )
 
 
-if 0:
-    # Compare two Python versions
-    v1 = 10
-    v2 = 11
+if 1:
+    # Compare sysmon on many projects
+
     run_experiment(
         py_versions=[
-            Python(3, v1),
-            Python(3, v2),
+            Python(3, 12),
         ],
         cov_versions=[
+            NoCoverage("nocov"),
             Coverage("753", "coverage==7.5.3"),
+            Coverage("sysmon", "coverage==7.5.3", env_vars={"COVERAGE_CORE": "sysmon"}),
         ],
         projects=[
-            ProjectMpmath(wipe_dir=False),
+            # ProjectSphinx(wipe_dir=True),  # Works, slow
+            ProjectPygments(wipe_dir=True),  # Works
+            # ProjectRich(wipe_dir=True),  # Doesn't work
+            # ProjectTornado(wipe_dir=True),  # Works, tests fail
+            ProjectDulwich(wipe_dir=True),  # Works
+            # ProjectBlack(wipe_dir=True),  # Works, slow
+            # ProjectMpmath(wipe_dir=True),  # Works, slow
+            # ProjectMypy(wipe_dir=True),  # Works, slow
+            ProjectHtml5lib(wipe_dir=True),  # Works
+            ProjectUrllib3(wipe_dir=True),  # Works
         ],
-        rows=["cov", "proj"],
-        column="pyver",
+        rows=["pyver", "proj"],
+        column="cov",
         ratios=[
-            (f"3.{v2} vs 3.{v1}", f"python3.{v2}", f"python3.{v1}"),
+            (f"753%", "753", "nocov"),
+            (f"sysmon%", "sysmon", "nocov"),
         ],
-        wipe_dir=False,
+        wipe_dir=True,
     )
 
-if 1:
+if 0:
     # Compare current Coverage source against shipped version
     run_experiment(
         py_versions=[
