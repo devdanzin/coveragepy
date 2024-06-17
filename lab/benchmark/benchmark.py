@@ -136,6 +136,7 @@ def file_replace(file_name: Path, old_text: str, new_text: str) -> Iterator[None
     """
     Replace some text in `file_name`, and change it back.
     """
+    file_text = ""
     if old_text:
         file_text = file_name.read_text()
         if old_text not in file_text:
@@ -1027,6 +1028,7 @@ class Experiment:
             for col in dimensions[column]:
                 key = (*tup, col)
                 key = tuple(key[i] for i in remap)
+                key = cast(ResultKey, key)
                 result_time = self.summary_data[key]
                 row.append(f"{result_time:.1f}s")
                 col_data[col] = result_time
