@@ -27,8 +27,8 @@ from typing import Any, Iterable, Iterator, Mapping, Tuple, Type, cast
 import requests
 import tabulate
 
-TweaksType = Iterable[tuple[str, Any]]|None
-Env_VarsType = dict[str, str]|None
+TweaksType = Iterable[tuple[str, Any]] | None
+Env_VarsType = dict[str, str] | None
 
 
 class ShellSession:
@@ -40,7 +40,7 @@ class ShellSession:
     def __init__(self, output_filename: str):
         self.output_filename = output_filename
         self.last_duration: float = 0
-        self.foutput: TextIOWrapper|None = None
+        self.foutput: TextIOWrapper | None = None
         self.env_vars = {"PATH": os.getenv("PATH")}
 
     def __enter__(self) -> ShellSession:
@@ -49,13 +49,13 @@ class ShellSession:
         return self
 
     def __exit__(
-        self, exc_type: Type[BaseException]|None, exc_value: BaseException|None, traceback: TracebackType|None
+        self, exc_type: Type[BaseException] | None, exc_value: BaseException | None, traceback: TracebackType | None
     ) -> None:
         if self.foutput is not None:
             self.foutput.close()
 
     @contextlib.contextmanager
-    def set_env(self, env_vars: dict[str, str]|None) -> Iterator[None]:
+    def set_env(self, env_vars: dict[str, str] | None) -> Iterator[None]:
         old_env_vars = self.env_vars
         if env_vars:
             self.env_vars = dict(old_env_vars)
@@ -213,7 +213,6 @@ class ProjectToTest:
 
         This is not timed.
         """
-        pass
 
     @contextlib.contextmanager
     def tweak_coverage_settings(
@@ -575,7 +574,7 @@ class ProjectMypy(ToxProject):
     MYPYC_COMMAND_LINE = "TestCommandLine"
     ERROR_STREAM = "ErrorStreamSuite"
 
-    ALL_NON_FAST = [
+    ALL_NON_FAST = (
         CMDLINE,
         PEP561,
         EVALUATION,
@@ -587,7 +586,7 @@ class ProjectMypy(ToxProject):
         MYPYC_EXTERNAL,
         MYPYC_COMMAND_LINE,
         ERROR_STREAM,
-    ]
+    )
 
     FAST = "pytest", "-k", f"\"not ({' or '.join(ALL_NON_FAST)})\""
 
@@ -705,7 +704,7 @@ def tweak_toml_coverage_settings(
 class AdHocProject(ProjectToTest):
     """A standalone program to run locally."""
 
-    def __init__(self, python_file: str, cur_dir: str|None = None, pip_args: str = ""):
+    def __init__(self, python_file: str, cur_dir: str | None = None, pip_args: str = ""):
         super().__init__()
         self.python_file = Path(python_file)
         if not self.python_file.exists():
@@ -796,7 +795,7 @@ class Coverage:
     # Short word for messages, directories, etc
     slug: str
     # Arguments for "pip install ..."
-    pip_args: str|None = None
+    pip_args: str | None = None
     # Tweaks to the .coveragerc file
     tweaks: TweaksType = None
     # Environment variables to set
@@ -893,7 +892,7 @@ class Experiment:
     def save_results(self) -> None:
         """Save current results to the JSON file."""
         with self.results_file.open("w") as f:
-            json.dump({ " ".join(k): v for k, v in self.result_data.items()}, f)
+            json.dump({" ".join(k): v for k, v in self.result_data.items()}, f)
 
     def load_results(self) -> dict[ResultKey, list[float]]:
         """Load results from the JSON file if it exists."""
