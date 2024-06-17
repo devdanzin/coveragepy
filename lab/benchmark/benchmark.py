@@ -55,7 +55,7 @@ class ShellSession:
             self.foutput.close()
 
     @contextlib.contextmanager
-    def set_env(self, env_vars: dict[str, str]) -> Iterator[None]:
+    def set_env(self, env_vars: dict[str, str]|None) -> Iterator[None]:
         old_env_vars = self.env_vars
         if env_vars:
             self.env_vars = dict(old_env_vars)
@@ -957,7 +957,6 @@ class Experiment:
                 print(banner)
                 env.shell.print_banner(banner)
                 with change_dir(proj.dir):
-                    assert cov_ver.env_vars is not None
                     with env.shell.set_env(cov_ver.env_vars):
                         try:
                             if cov_ver.pip_args is None:
