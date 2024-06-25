@@ -455,7 +455,7 @@ class ProjectPygments(ToxProject):
         with self.tweak_coverage_settings(cov_ver.tweaks):
             self.pre_check(env)  # NOTE: Not properly factored, and only used here.
             duration = self.run_tox(
-                env, env.pyver.toxenv, "--skip-pkg-install -- --cov"
+                env, env.pyver.toxenv, "--skip-pkg-install -- --cov=pygments"
             )
             self.post_check(env)  # NOTE: Not properly factored, and only used here.
         return duration
@@ -508,21 +508,23 @@ class ProjectDulwich(ToxProject):
 
 class ProjectBlack(ToxProject):
     git_url = "https://github.com/psf/black"
-
+    select = '-k "not (test_format.py or test_black.py)"'
     def prep_environment(self, env: Env) -> None:
         env.shell.run_command(f"{env.python} -m pip install -r test_requirements.txt")
         env.shell.run_command(f"{env.python} -m pip install -e .[d]")
 
     def run_no_coverage(self, env: Env) -> float:
         env.shell.run_command(
-            f"{env.python} -m pytest tests --run-optional no_jupyter --no-cov --numprocesses 1"
+            f"{env.python} -m pytest tests {self.select} --run-optional no_jupyter"
+            f" --no-cov --numprocesses 1"
         )
         return env.shell.last_duration
 
     def run_with_coverage(self, env: Env, cov_ver: Coverage) -> float:
         env.shell.run_command(f"{env.python} -m pip install {cov_ver.pip_args}")
         env.shell.run_command(
-            f"{env.python} -m pytest tests --run-optional no_jupyter --cov --numprocesses 1"
+            f"{env.python} -m pytest tests {self.select} --run-optional no_jupyter"
+            f" --cov=black --numprocesses 1"
         )
         duration = env.shell.last_duration
         report = env.shell.run_command(f"{env.python} -m coverage report --precision=6")
@@ -532,7 +534,8 @@ class ProjectBlack(ToxProject):
 
 class ProjectMpmath(ProjectToTest):
     git_url = "https://github.com/mpmath/mpmath"
-    select = "-k 'not (torture or extra or functions2 or calculus or cli or elliptic or quad)'"
+    select = ('-k "not (torture or extra or functions2 or calculus or cli or elliptic or '
+              'ctx_fp or hypergeometric or quad)"')
 
     def prep_environment(self, env: Env) -> None:
         env.shell.run_command(f"{env.python} -m pip install .[develop]")
@@ -552,6 +555,9 @@ class ProjectMpmath(ProjectToTest):
 
 class ProjectMypy(ToxProject):
     git_url = "https://github.com/python/mypy"
+    select = ("finegrained", "irbuild", "testcheck", "testcmdline", "testdaemon", "testerrorstream",
+              "testpythoneval", "test_run", "testinfer.py", "testreports.py", "testoutput",
+              "testerrorstream", "testsemanal", "teststubtest")
 
     # Slow test suites
     CMDLINE = "PythonCmdline"
@@ -580,7 +586,7 @@ class ProjectMypy(ToxProject):
         ERROR_STREAM,
     )
 
-    FAST = "pytest", "-k", f"\"not ({' or '.join(ALL_NON_FAST)})\""
+    FAST = "pytest", "-k", f"\"not ({' or '.join(ALL_NON_FAST + select)})\""
 
     def prep_environment(self, env: Env) -> None:
         env.shell.run_command(f"{env.python} -m pip install -r test-requirements.txt")
@@ -591,7 +597,7 @@ class ProjectMypy(ToxProject):
 
     def run_with_coverage(self, env: Env, cov_ver: Coverage) -> float:
         env.shell.run_command(f"{env.python} -m pip install {cov_ver.pip_args}")
-        env.shell.run_command(f"{env.python} -m {' '.join(self.FAST)} --cov")
+        env.shell.run_command(f"{env.python} -m {' '.join(self.FAST)} --cov=mypy")
         duration = env.shell.last_duration
         report = env.shell.run_command(f"{env.python} -m coverage report --precision=6")
         print("Results:", report.splitlines()[-1])
