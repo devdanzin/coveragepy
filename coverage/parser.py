@@ -115,6 +115,39 @@ class PythonParser:
                 matches.add(self._multiline.get(i, i))
         return matches
 
+    def lines_between(
+        self, start: str = "# no cover: start", end: str = "# no cover: stop"
+    ) -> set[TLineNo]:
+        """Find lines between `start` and `end`, inclusive.
+
+        Returns a set of line numbers, starting from the line that contains
+        `start` and ending with the line that contains `end`, if any, or
+        until the end of the source. The entire line needn't match, just a
+        part of it.
+
+        """
+        regex_start, regex_end = re.compile(start), re.compile(end)
+        lines = set()
+        source_lines = self.text.split("\n")
+        last_line = len(source_lines)
+        current_line = 1
+
+        excluding = False
+        while current_line <= last_line:
+            if not excluding and regex_start.search(source_lines[current_line - 1]):
+                lines.add(current_line)
+                excluding = True
+            current_line += 1
+            while excluding and current_line <= last_line:
+                if not regex_end.search(source_lines[current_line - 1]):
+                    lines.add(current_line)
+                    current_line += 1
+                else:
+                    lines.add(current_line)
+                    excluding = False
+                    break
+        return lines
+
     def _raw_parse(self) -> None:
         """Parse the source to find the interesting facts about its lines.
 
@@ -125,6 +158,7 @@ class PythonParser:
         if self.exclude:
             self.raw_excluded = self.lines_matching(self.exclude)
             self.excluded = set(self.raw_excluded)
+            self.excluded |= self.lines_between()
 
         # The current number of indents.
         indent: int = 0
