@@ -128,6 +128,8 @@ class PythonParser:
         """
         regex_start, regex_end = re.compile(start), re.compile(end)
         lines = set()
+        if not regex_start.search(self.text):
+            return lines
         source_lines = self.text.split("\n")
         last_line = len(source_lines)
         current_line = 1
