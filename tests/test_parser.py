@@ -825,6 +825,25 @@ class ExclusionParserTest(PythonParserTestBase):
         assert parser.raw_statements == {1, 2, 3}
         assert parser.statements == {1, 3}
 
+        parser = self.parse_text("""\
+        def foo():
+            pass  # no cover: start
+            pass
+            pass
+        """)
+        assert parser.raw_statements == {1, 2, 3, 4}
+        assert parser.statements == {1}
+
+        parser = self.parse_text("""\
+        def foo():
+            pass
+            # no cover: stop
+            pass
+        """)
+        assert parser.raw_statements == {1, 2, 4}
+        assert parser.statements == {1, 2, 4}
+
+
 class ParserMissingArcDescriptionTest(PythonParserTestBase):
     """Tests for PythonParser.missing_arc_description."""
 

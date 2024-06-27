@@ -134,18 +134,17 @@ class PythonParser:
 
         excluding = False
         while current_line <= last_line:
-            if not excluding and regex_start.search(source_lines[current_line - 1]):
+            line_text = source_lines[current_line - 1]
+            if not excluding and regex_start.search(line_text):
                 lines.add(current_line)
-                excluding = True
-            current_line += 1
-            while excluding and current_line <= last_line:
-                if not regex_end.search(source_lines[current_line - 1]):
-                    lines.add(current_line)
-                    current_line += 1
-                else:
-                    lines.add(current_line)
+                # Handle end marker being on the same line as start marker
+                if not regex_end.search(line_text):
+                    excluding = True
+            elif excluding:
+                lines.add(current_line)
+                if regex_end.search(line_text):
                     excluding = False
-                    break
+            current_line += 1
         return lines
 
     def _raw_parse(self) -> None:
