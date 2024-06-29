@@ -5,10 +5,12 @@ This script runs the test suite of a specified Python package using coverage and
 then classifies each test file as fast, medium, or slow based on their execution times.
 
 Usage:
-    python slowtests.py [directory]
+    python slowtests.py [options]
 
-Arguments:
-    directory: The directory of the Python package to run tests on. Defaults to the current directory.
+Options:
+    -d, --directory     The directory of the Python package to run tests on. Defaults to the current directory.
+    -f, --fast          Threshold for fast tests in seconds. Defaults to 45 seconds.
+    -t, --timeout       Timeout for tests in seconds. Defaults to 120 seconds.
 
 Dependencies:
     - pytest
@@ -16,26 +18,24 @@ Dependencies:
     - All dependencies required by the Python package to run its test suite must be installed.
 
 Classification thresholds:
-    - Fast: Execution time less than 45 seconds.
-    - Medium: Execution time between 45 seconds and 120 seconds.
-    - Slow: Execution time more than 120 seconds or times out after 120 seconds.
+    - Fast: Execution time less than the specified fast threshold.
+    - Medium: Execution time between the fast threshold and timeout.
+    - Slow: Execution time more than the timeout or times out after the specified timeout.
 
-The script collects the execution times of the tests and prints out the classification results.
+The script collects the execution times of the tests and prints out the classification results,
+including the slowest tests per test file.
 It also identifies tests that fail or raise errors during execution.
 """
 
 from __future__ import annotations
 
 import subprocess
-import sys
 import time
 from pathlib import Path
 from typing import Any
+import optparse
 
 import pytest
-
-FAST_THRESHOLD = 45
-TIMEOUT = 120
 
 
 class PathCollector:
@@ -56,7 +56,7 @@ def collect_test_paths(directory: str) -> PathCollector:
     return path_collector
 
 
-def run_test(item: Path) -> tuple[int | None, float | int, str | None]:
+def run_test(item: Path, timeout: int = 120) -> tuple[int | None, float | int, str | None]:
     """Run a single test file and returns its execution time and individual test durations."""
     start = time.perf_counter()
     try:
@@ -65,13 +65,13 @@ def run_test(item: Path) -> tuple[int | None, float | int, str | None]:
             check=False,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            timeout=TIMEOUT,
+            timeout=timeout,
         )
         runtime = time.perf_counter() - start
         output = result.stdout.decode()
         return result.returncode, runtime, output
     except subprocess.TimeoutExpired:
-        return None, TIMEOUT, None
+        return None, timeout, None
 
 
 def parse_durations(output: str) -> list[dict[str, str | float]]:
@@ -90,7 +90,9 @@ def parse_durations(output: str) -> list[dict[str, str | float]]:
     return durations
 
 
-def categorize_tests(paths: list[Path]) -> dict[str, Any]:
+def categorize_tests(
+    paths: list[Path], fast_threshold: int = 45, timeout: int = 120
+) -> dict[str, Any]:
     """Categorize test files."""
     categories = {
         "fast": {},
@@ -101,7 +103,7 @@ def categorize_tests(paths: list[Path]) -> dict[str, Any]:
     }
 
     for item in sorted(paths):
-        returncode, runtime, output = run_test(item)
+        returncode, runtime, output = run_test(item, timeout)
 
         if returncode is None:
             print(f"{item} is slow.")
@@ -111,7 +113,7 @@ def categorize_tests(paths: list[Path]) -> dict[str, Any]:
             print(output)
             categories["failures"].append(item)
         else:
-            if runtime < FAST_THRESHOLD:
+            if runtime < fast_threshold:
                 print(f"{item} is fast: {runtime:.3f}s.")
                 categories["fast"][item] = runtime
             else:
@@ -143,13 +145,40 @@ def print_slowest_tests(slowest_tests: dict[Path, list[dict[str, Any]]]) -> None
 
 def main():
     """Main function to execute the test suite and classify the test files."""
-    directory = sys.argv[1] if len(sys.argv) > 1 else "."
+    parser = optparse.OptionParser()
+    parser.add_option(
+        "-d", "--directory",
+        dest="directory",
+        default=".",
+        help="The directory of the Python package to run tests on. Defaults to the current directory."
+    )
+    parser.add_option(
+        "-f", "--fast",
+        dest="fast_threshold",
+        type="int",
+        default=45,
+        help="Threshold for fast tests in seconds. Defaults to 45 seconds."
+    )
+    parser.add_option(
+        "-t", "--timeout",
+        dest="timeout",
+        type="int",
+        default=120,
+        help="Timeout for tests in seconds. Defaults to 120 seconds."
+    )
+
+    options, args = parser.parse_args()
+
+    fast_threshold = options.fast_threshold
+    timeout = options.timeout
+
+    directory = options.directory
     print(f"Collecting tests from {Path(directory).resolve()}")
 
     path_collector = collect_test_paths(directory)
     print(f"Found {len(path_collector.paths)} test files.")
 
-    categories = categorize_tests(list(path_collector.paths))
+    categories = categorize_tests(list(path_collector.paths), fast_threshold, timeout)
 
     if categories["fast"]:
         print_times(categories["fast"], "Fast")
