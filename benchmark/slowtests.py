@@ -1,3 +1,29 @@
+"""
+slowtests.py - Identify and classify the execution time of test files in a Python package.
+
+This script runs the test suite of a specified Python package using coverage and pytest,
+then classifies each test file as fast, medium, or slow based on their execution times.
+
+Usage:
+    python slowtests.py [directory]
+
+Arguments:
+    directory: The directory of the Python package to run tests on. Defaults to the current directory.
+
+Dependencies:
+    - pytest
+    - coverage
+    - All dependencies required by the Python package to run its test suite must be installed.
+
+Classification thresholds:
+    - Fast: Execution time less than 45 seconds.
+    - Medium: Execution time between 45 seconds and 120 seconds.
+    - Slow: Execution time more than 120 seconds or times out after 120 seconds.
+
+The script collects the execution times of the tests and prints out the classification results.
+It also identifies tests that fail or raise errors during execution.
+"""
+
 from __future__ import annotations
 
 import subprocess
@@ -8,26 +34,30 @@ from typing import Any
 
 import pytest
 
-FAST_THRESHOLD = 15
-TIMEOUT = 30
+FAST_THRESHOLD = 45
+TIMEOUT = 120
 
 
 class PathCollector:
+    """Records the paths of test items during pytest collection."""
     def __init__(self) -> None:
         self.paths = set()
 
     def pytest_collection_modifyitems(self, items: list[pytest.Item]) -> None:
+        """Modify the test collection to collect paths of test items."""
         for item in items:
             self.paths.add(Path(item.path))
 
 
 def collect_test_paths(directory: str) -> PathCollector:
+    """Collect test file paths from the specified directory."""
     path_collector = PathCollector()
     pytest.main(["--collect-only", "-q", directory], plugins=[path_collector])
     return path_collector
 
 
-def run_test(item: Path) -> Any:
+def run_test(item: Path) -> tuple[int | None, float | int, str | None]:
+    """Run a single test file and returns its execution time and individual test durations."""
     start = time.perf_counter()
     try:
         result = subprocess.run(
@@ -44,7 +74,7 @@ def run_test(item: Path) -> Any:
         return None, TIMEOUT, None
 
 
-def parse_durations(output: str) -> list[dict[str, Any]]:
+def parse_durations(output: str) -> list[dict[str, str | float]]:
     """Parse the durations of the individual tests from the pytest output."""
     durations = []
     for line in output.splitlines():
@@ -61,6 +91,7 @@ def parse_durations(output: str) -> list[dict[str, Any]]:
 
 
 def categorize_tests(paths: list[Path]) -> dict[str, Any]:
+    """Categorize test files."""
     categories = {
         "fast": {},
         "medium": {},
@@ -95,12 +126,14 @@ def categorize_tests(paths: list[Path]) -> dict[str, Any]:
 
 
 def print_times(tests: dict[Path, float], label: str) -> None:
+    """Print the execution times of the test files."""
     print(f"\n# {label} tests ({sum(tests.values()):.2f} seconds):")
     for path, runtime in sorted(tests.items(), key=lambda x: x[1]):
         print(f"{path.name}: {runtime:.3f}")
 
 
 def print_slowest_tests(slowest_tests: dict[Path, list[dict[str, Any]]]) -> None:
+    """Print the slowest test files."""
     print("\n# Slowest individual tests per file:")
     for path, tests in slowest_tests.items():
         print(f"\n{path.name}:")
@@ -109,6 +142,7 @@ def print_slowest_tests(slowest_tests: dict[Path, list[dict[str, Any]]]) -> None
 
 
 def main():
+    """Main function to execute the test suite and classify the test files."""
     directory = sys.argv[1] if len(sys.argv) > 1 else "."
     print(f"Collecting tests from {Path(directory).resolve()}")
 
