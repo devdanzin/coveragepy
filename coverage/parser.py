@@ -101,18 +101,21 @@ class PythonParser:
         self._all_arcs: set[TArc] | None = None
         self._missing_arc_fragments: TArcFragments | None = None
 
-    def lines_matching(self, regex: str) -> set[TLineNo]:
+    def lines_matching(self, regex: str) -> Set[TLineNo]:
         """Find the lines matching a regex.
 
         Returns a set of line numbers, the lines that contain a match for
-        `regex`.  The entire line needn't match, just a part of it.
+        `regex`. The entire line needn't match, just a part of it.
+        Handles multiline regex patterns.
 
         """
-        regex_c = re.compile(regex)
+        regex_c = re.compile(regex, re.MULTILINE)
         matches = set()
-        for i, ltext in enumerate(self.text.split("\n"), start=1):
-            if regex_c.search(ltext):
-                matches.add(self._multiline.get(i, i))
+        for match in regex_c.finditer(self.text):
+            start, end = match.span()
+            start_line = self.text.count('\n', 0, start) + 1
+            end_line = self.text.count('\n', 0, end) + 1
+            matches.update(self._multiline.get(i, i) for i in range(start_line, end_line + 1))
         return matches
 
     def _raw_parse(self) -> None:
