@@ -102,7 +102,7 @@ class PythonParser:
         self._missing_arc_fragments: TArcFragments | None = None
 
         # A dict mapping character positions to line numbers
-        self.line_map = self._build_line_map()
+        self.line_map: dict[int, TLineNo] = {}
 
     def _build_line_map(self) -> dict[int, TLineNo]:
         """Build a dictionary mapping character positions to line numbers."""
@@ -122,8 +122,10 @@ class PythonParser:
         Handles multiline regex patterns.
 
         """
+        if not self.line_map:
+            self.line_map = self._build_line_map()
         regex_c = re.compile(regex, re.MULTILINE)
-        matches = set()
+        matches: set[TLineNo] = set()
         for match in regex_c.finditer(self.text):
             start, end = match.span()
             start_line = self.line_map[start]
