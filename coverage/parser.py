@@ -101,6 +101,19 @@ class PythonParser:
         self._all_arcs: set[TArc] | None = None
         self._missing_arc_fragments: TArcFragments | None = None
 
+        # A dict mapping character positions to line numbers
+        self.line_map = self._build_line_map()
+
+    def _build_line_map(self) -> dict[int, TLineNo]:
+        """Build a dictionary mapping character positions to line numbers."""
+        line_map = {}
+        line_number = 1
+        for pos, char in enumerate(self.text):
+            line_map[pos] = line_number
+            if char == '\n':
+                line_number += 1
+        return line_map
+
     def lines_matching(self, regex: str) -> Set[TLineNo]:
         """Find the lines matching a regex.
 
@@ -113,8 +126,8 @@ class PythonParser:
         matches = set()
         for match in regex_c.finditer(self.text):
             start, end = match.span()
-            start_line = self.text.count('\n', 0, start) + 1
-            end_line = self.text.count('\n', 0, end) + 1
+            start_line = self.line_map[start]
+            end_line = self.line_map[end - 1]  # end is exclusive, so use end - 1
             matches.update(self._multiline.get(i, i) for i in range(start_line, end_line + 1))
         return matches
 
