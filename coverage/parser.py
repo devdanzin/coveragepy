@@ -113,7 +113,10 @@ class PythonParser:
         if not regex:
             return matches
         regex_c = re.compile(regex, re.MULTILINE)
-        for match in regex_c.finditer(self.text):
+        re_matches = list(regex_c.finditer(self.text))
+        if len(re_matches) > 1000:
+            raise ValueError("Too many matches for regex: %r" % regex)
+        for match in re_matches:
             start, end = match.span()
             start_line = self.text.count('\n', 0, start) + 1
             end_line = self.text.count('\n', 0, end) + 1
