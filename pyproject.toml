@@ -230,6 +230,7 @@ ignore = [
   "PLR6301",  # Method could be a function, class method, or static method
   "PLW0127",  # self-assigning-variable
   "PLW0603",  # global-statement
+  "PLW1510",  # `subprocess.run` without explicit `check` argument
   "PLW1514",  # unspecified-encoding
   "PLW2901",  # `for` loop variable overwritten by assignment target
   "PT004",    # Fixture `clean_up` does not return anything, add leading underscore

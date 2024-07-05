@@ -65,7 +65,7 @@ project = 'Coverage.py'
 # built documents.
 
 # @@@ editable
-copyright = "2009–2024, Ned Batchelder" # pylint: disable=redefined-builtin
+copyright = "2009–2024, Ned Batchelder" # pylint: disable=redefined-builtin  # noqa: RUF001
 # The short X.Y.Z version.
 version = "7.5.4"
 # The full version, including alpha/beta/rc tags.

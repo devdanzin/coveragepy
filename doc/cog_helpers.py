@@ -11,6 +11,7 @@ Functions for use with cog in the documentation.
 # import cmdline.py, which creates the optparse objects.
 
 # pylint: disable=wrong-import-position
+# ruff: noqa: E402
 import os
 os.environ["COLUMNS"] = "80"
 
