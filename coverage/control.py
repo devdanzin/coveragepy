@@ -675,7 +675,7 @@ class Coverage(TConfigurable):
         try:
             yield
         finally:
-            self.stop()
+            self.stop()     # pragma: nested
 
     def _atexit(self, event: str = "atexit") -> None:
         """Clean up on process shutdown."""
@@ -1308,6 +1308,7 @@ class Coverage(TConfigurable):
             ("python", sys.version.replace("\n", "")),
             ("platform", platform.platform()),
             ("implementation", platform.python_implementation()),
+            ("gil_enabled", getattr(sys, '_is_gil_enabled', lambda: True)()),
             ("executable", sys.executable),
             ("def_encoding", sys.getdefaultencoding()),
             ("fs_encoding", sys.getfilesystemencoding()),

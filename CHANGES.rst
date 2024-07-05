@@ -23,10 +23,45 @@ upgrading your version of coverage.py.
 Unreleased
 ----------
 
-Nothing yet.
+- Exclusion patterns can now be multi-line, thanks to `Daniel Diniz <pull
+  1807_>`_.  This enables many interesting exclusion use-cases, including those
+  requested in issues `118 <issue 118_>`_ (entire files), `996
+  <issue 996_>`_ (multiple lines only when appearing together), `1741
+  <issue 1741_>`_ (remainder of a function), and `1803 <issue 1803_>`_
+  (arbitrary sequence of marked lines).  See the :ref:`multi_line_exclude`
+  section of the docs for more details and examples.
 
+- Python 3.13.0b3 is supported.
+
+.. _issue 118: https://github.com/nedbat/coveragepy/issues/118
+.. _issue 996: https://github.com/nedbat/coveragepy/issues/996
+.. _issue 1741: https://github.com/nedbat/coveragepy/issues/1741
+.. _issue 1803: https://github.com/nedbat/coveragepy/issues/1803
+
+.. _pull 1807: https://github.com/nedbat/coveragepy/pull/1807
 
 .. scriv-start-here
+
+.. _changes_7-5-4:
+
+Version 7.5.4 — 2024-06-22
+--------------------------
+
+- If you attempt to combine statement coverage data with branch coverage data,
+  coverage.py used to fail with the message "Can't combine arc data with line
+  data" or its reverse, "Can't combine line data with arc data."  These
+  messages used internal terminology, making it hard for people to understand
+  the problem.  They are now changed to mention "branch coverage data" and
+  "statement coverage data."
+
+- Fixed a minor branch coverage problem with wildcard match/case cases using
+  names or guard clauses.
+
+- Started testing on 3.13 free-threading (nogil) builds of Python.  I'm not
+  claiming full support yet.  Closes `issue 1799`_.
+
+.. _issue 1799: https://github.com/nedbat/coveragepy/issues/1799
+
 
 .. _changes_7-5-3:
 

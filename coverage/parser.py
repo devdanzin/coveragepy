@@ -105,14 +105,22 @@ class PythonParser:
         """Find the lines matching a regex.
 
         Returns a set of line numbers, the lines that contain a match for
-        `regex`.  The entire line needn't match, just a part of it.
+        `regex`. The entire line needn't match, just a part of it.
+        Handles multiline regex patterns.
 
         """
-        regex_c = re.compile(regex)
-        matches = set()
-        for i, ltext in enumerate(self.text.split("\n"), start=1):
-            if regex_c.search(ltext):
-                matches.add(self._multiline.get(i, i))
+        regex_c = re.compile(regex, re.MULTILINE)
+        matches: set[TLineNo] = set()
+
+        last_start = 0
+        last_start_line = 0
+        for match in regex_c.finditer(self.text):
+            start, end = match.span()
+            start_line = last_start_line + self.text.count('\n', last_start, start)
+            end_line = last_start_line + self.text.count('\n', last_start, end)
+            matches.update(self._multiline.get(i, i) for i in range(start_line + 1, end_line + 2))
+            last_start = start
+            last_start_line = start_line
         return matches
 
     def _raw_parse(self) -> None:
@@ -1166,14 +1174,8 @@ class AstArcAnalyzer:
             start = self.line_for_node(node)
             last_start = start
             exits = set()
-            had_wildcard = False
             for case in node.cases:
                 case_start = self.line_for_node(case.pattern)
-                pattern = case.pattern
-                while isinstance(pattern, ast.MatchOr):
-                    pattern = pattern.patterns[-1]
-                if isinstance(pattern, ast.MatchAs):
-                    had_wildcard = True
                 self.add_arc(last_start, case_start, "the pattern on line {lineno} always matched")
                 from_start = ArcStart(
                     case_start,
@@ -1181,6 +1183,17 @@ class AstArcAnalyzer:
                 )
                 exits |= self.body_exits(case.body, from_start=from_start)
                 last_start = case_start
+
+            # case is now the last case, check for wildcard match.
+            pattern = case.pattern      # pylint: disable=undefined-loop-variable
+            while isinstance(pattern, ast.MatchOr):
+                pattern = pattern.patterns[-1]
+            had_wildcard = (
+                isinstance(pattern, ast.MatchAs)
+                and pattern.pattern is None
+                and case.guard is None  # pylint: disable=undefined-loop-variable
+            )
+
             if not had_wildcard:
                 exits.add(
                     ArcStart(case_start, cause="the pattern on line {lineno} always matched"),
