@@ -849,7 +849,7 @@ class SummaryTest(UsingModulesMixin, CoverageTest):
         cov = coverage.Coverage()
         # start_import_stop can't import the .pyw file, so use the long form.
         with cov.collect():
-            import start    # pylint: disable=import-error, unused-import
+            import start    # pylint: disable=import-error, unused-import  # noqa: F401
 
         report = self.get_report(cov)
         assert "NoSource" not in report
@@ -905,7 +905,7 @@ class SummaryTest(UsingModulesMixin, CoverageTest):
         # statements, not one statement.
         cov = coverage.Coverage(branch=True)
         with cov.collect():
-            import usepkgs  # pylint: disable=import-error, unused-import
+            import usepkgs  # pylint: disable=import-error, unused-import  # noqa: F401
         report = self.get_report(cov)
         assert "tests/modules/pkg1/__init__.py 1 0 0 0 100%" in report
         assert "tests/modules/pkg2/__init__.py 0 0 0 0 100%" in report

@@ -276,7 +276,7 @@ class ApiTest(CoverageTest):
         cov = coverage.Coverage(data_file=None)
 
         def f1() -> None:       # pragma: nested
-            a = 1               # pylint: disable=unused-variable
+            a = 1               # pylint: disable=unused-variable  # noqa: F841
 
         one_line_number = f1.__code__.co_firstlineno + 1
         lines = []
@@ -886,7 +886,7 @@ class SourceIncludeOmitTest(IncludeOmitTestsMixin, CoverageTest):
         """
         cov = coverage.Coverage(**kwargs)
         with cov.collect():
-            import usepkgs  # pylint: disable=import-error, unused-import
+            import usepkgs  # pylint: disable=import-error, unused-import  # noqa: F401
         with self.assert_warnings(cov, []):
             data = cov.get_data()
         summary = line_counts(data)
@@ -978,7 +978,7 @@ class ReportIncludeOmitTest(IncludeOmitTestsMixin, CoverageTest):
         """Try coverage.report()."""
         cov = coverage.Coverage()
         with cov.collect():
-            import usepkgs  # pylint: disable=import-error, unused-import
+            import usepkgs  # pylint: disable=import-error, unused-import  # noqa: F401
         report = io.StringIO()
         cov.report(file=report, **kwargs)
         return report.getvalue()
@@ -996,7 +996,7 @@ class XmlIncludeOmitTest(IncludeOmitTestsMixin, CoverageTest):
         """Try coverage.xml_report()."""
         cov = coverage.Coverage()
         with cov.collect():
-            import usepkgs  # pylint: disable=import-error, unused-import
+            import usepkgs  # pylint: disable=import-error, unused-import  # noqa: F401
         cov.xml_report(outfile="-", **kwargs)
         return self.stdout()
 

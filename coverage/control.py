@@ -121,7 +121,7 @@ class Coverage(TConfigurable):
         else:
             return None
 
-    def __init__(                       # pylint: disable=too-many-arguments  #noqa: PLR0913,PLR0917
+    def __init__(                       # pylint: disable=too-many-arguments
         self,
         data_file: FilePath | DefaultValue | None = DEFAULT_DATAFILE,
         data_suffix: str | bool | None = None,

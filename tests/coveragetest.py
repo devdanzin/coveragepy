@@ -300,7 +300,7 @@ class CoverageTest(
         def capture_warning(
             msg: str,
             slug: str | None = None,
-            once: bool = False,                 # pylint: disable=unused-argument
+            once: bool = False,                 # pylint: disable=unused-argument  # noqa: ARG001
         ) -> None:
             """A fake implementation of Coverage._warn, to capture warnings."""
             # NOTE: we don't implement `once`.

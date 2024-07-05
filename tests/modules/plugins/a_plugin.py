@@ -14,6 +14,6 @@ class Plugin(CoveragePlugin):
 
 def coverage_init(
     reg: Plugins,
-    options: Any,       # pylint: disable=unused-argument
+    options: Any,       # pylint: disable=unused-argument  # noqa: ARG001
 ) -> None:
     reg.add_file_tracer(Plugin())

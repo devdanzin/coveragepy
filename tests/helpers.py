@@ -388,7 +388,7 @@ class FailingProxy:
 
     def _make_failing_method(self, exc: Exception) -> Callable[..., NoReturn]:
         """Return a function that will raise `exc`."""
-        def _meth(*args: Any, **kwargs: Any) -> NoReturn:
+        def _meth(*args: Any, **kwargs: Any) -> NoReturn:  # noqa: ARG001
             raise exc
         return _meth
 

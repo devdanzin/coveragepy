@@ -235,13 +235,13 @@ class MultiChild(SomethingElse, Child):
 def no_arguments() -> str | None:
     return get_qualname()
 
-def plain_old_function(a: Any, b: Any) -> str | None:
+def plain_old_function(a: Any, b: Any) -> str | None:  # noqa: ARG001
     return get_qualname()
 
-def fake_out(self: Any) -> str | None:
+def fake_out(self: Any) -> str | None:  # noqa: ARG001
     return get_qualname()
 
-def patch_meth(self: Any) -> str | None:
+def patch_meth(self: Any) -> str | None:  # noqa: ARG001
     return get_qualname()
 
 # pylint: enable=missing-class-docstring, missing-function-docstring, unused-argument

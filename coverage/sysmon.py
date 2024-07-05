@@ -141,10 +141,10 @@ if LOG:  # pragma: debugging
 
 else:
 
-    def log(msg: str) -> None:
+    def log(msg: str) -> None:  # noqa: ARG001
         """Write a message to our detailed debugging log(s), but not really."""
 
-    def panopticon(*names: str | None) -> AnyCallable:
+    def panopticon(*names: str | None) -> AnyCallable:  # noqa: ARG001
         """Decorate a function to log its calls, but not really."""
 
         def _decorator(meth: AnyCallable) -> AnyCallable:

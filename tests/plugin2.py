@@ -15,7 +15,7 @@ from coverage.plugin_support import Plugins
 from coverage.types import TLineNo
 
 try:
-    import third.render                 # pylint: disable=unused-import
+    import third.render                 # pylint: disable=unused-import  # noqa: F401
 except ImportError:
     # This plugin is used in a few tests. One of them has the third.render
     # module, but most don't. We need to import it but not use it, so just
@@ -42,7 +42,7 @@ class RenderFileTracer(FileTracer):
 
     def dynamic_source_filename(
         self,
-        filename: str,
+        filename: str,  # noqa: ARG002
         frame: FrameType,
     ) -> str | None:
         if frame.f_code.co_name != "render":
@@ -66,7 +66,7 @@ class MyFileReporter(FileReporter):
 
 def coverage_init(
     reg: Plugins,
-    options: Any,       # pylint: disable=unused-argument
+    options: Any,       # pylint: disable=unused-argument  # noqa: ARG001
 ) -> None:
     """Called by coverage to initialize the plugins here."""
     reg.add_file_tracer(Plugin())

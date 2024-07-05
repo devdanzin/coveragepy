@@ -25,7 +25,7 @@ class Plugin(coverage.CoveragePlugin):
 
 def coverage_init(
     reg: Plugins,
-    options: Any,           # pylint: disable=unused-argument
+    options: Any,           # pylint: disable=unused-argument  # noqa: ARG001
 ) -> None:
     """Called by coverage to initialize the plugins here."""
     reg.add_configurer(Plugin())

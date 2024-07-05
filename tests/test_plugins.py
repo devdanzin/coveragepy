@@ -32,7 +32,7 @@ from tests.helpers import CheckUniqueFilenames, swallow_warnings
 
 class NullConfig(TPluginConfig):
     """A plugin configure thing when we don't really need one."""
-    def get_plugin_options(self, plugin: str) -> TConfigSectionOut:
+    def get_plugin_options(self, plugin: str) -> TConfigSectionOut:  # noqa: ARG002
         return {}   # pragma: never called
 
 
