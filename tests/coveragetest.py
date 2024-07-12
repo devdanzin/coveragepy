@@ -237,7 +237,7 @@ class CoverageTest(
             for fromno, tono in all_arcs:
                 arcs_combined[fromno].add(tono)
             branches = collections.defaultdict(list)
-            for fromno, tono in arcs:
+            for fromno, tono in all_arcs:
                 if len(arcs_combined[fromno]) > 1:
                     branches[fromno].append(tono)
             return branches
