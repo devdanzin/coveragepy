@@ -28,11 +28,11 @@ class InstrumentingLoader(Loader):
         self.origin = Path(origin)
 
         # loadlib checks for this attribute to see if we support it... keep in sync with orig_loader
-        if not getattr(self.orig_loader, "get_resource_reader", None):
-            delattr(self, "get_resource_reader")
+        if hasattr(self.orig_loader, "get_resource_reader"):
+            self.get_resource_reader = self._get_resource_reader
 
     # for compability with loaders supporting resources, used e.g. by sklearn
-    def get_resource_reader(self, fullname: str):
+    def _get_resource_reader(self, fullname: str):
         return self.orig_loader.get_resource_reader(fullname)
 
     def create_module(self, spec):
