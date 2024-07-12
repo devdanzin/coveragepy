@@ -150,18 +150,18 @@ def compile_instrumented(source: str, filename: str): # -> code object
 
     tree = FakeBranchLineTransformer().visit(tree)
     ast.fix_missing_locations(tree)
-    import contextlib, os
-    with open("/tmp/foo.out", "a") as f:
-        with contextlib.redirect_stdout(f):
-            print("=" * 80)
-            print(f"--- test: {os.getenv('PYTEST_CURRENT_TEST')}")
-            print(f"--- {filename} -------")
-            print(ast.dump(tree, indent=4))
+    # import contextlib, os
+    # with open("/tmp/foo.out", "a") as f:
+    #     with contextlib.redirect_stdout(f):
+    #         print("=" * 80)
+    #         print(f"--- test: {os.getenv('PYTEST_CURRENT_TEST')}")
+    #         print(f"--- {filename} -------")
+    #         print(ast.dump(tree, indent=4))
     code = compile(tree, filename, "exec", dont_inherit=True)
-    import contextlib, os
-    with open("/tmp/foo.out", "a") as f:
-        with contextlib.redirect_stdout(f):
-            import dis
-            print("----------------------------")
-            dis.dis(code)
+    # import contextlib, os
+    # with open("/tmp/foo.out", "a") as f:
+    #     with contextlib.redirect_stdout(f):
+    #         import dis
+    #         print("----------------------------")
+    #         dis.dis(code)
     return code
