@@ -236,8 +236,8 @@ class SysMonitor(TracerCore):
             register(events.PY_RETURN, self.sysmon_py_return_arcs)
             register(events.PY_UNWIND, self.sysmon_py_unwind_arcs)
             register(events.LINE, self.sysmon_line_arcs)
-            register(events.BRANCH, self.sysmon_branch_arcs)
-            register(events.JUMP, self.sysmon_jump_arcs)
+            # register(events.BRANCH, self.sysmon_branch_arcs)
+            # register(events.JUMP, self.sysmon_jump_arcs)
         else:
             sys_monitoring.set_events(self.myid, events.PY_START)
             register(events.PY_START, self.sysmon_py_start)
@@ -354,8 +354,8 @@ class SysMonitor(TracerCore):
                             | events.PY_RESUME
                             # | events.PY_YIELD
                             | events.LINE
-                            | events.BRANCH
-                            | events.JUMP
+                            # | events.BRANCH
+                            # | events.JUMP
                         )
                         self.local_event_codes[id(code)] = code
 
