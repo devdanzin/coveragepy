@@ -35,35 +35,22 @@ def analysis_from_file_reporter(
 
     if has_arcs:
         _arc_possibilities_set = file_reporter.arcs()
-        # print(f"{sorted(_arc_possibilities_set)=}")
         arcs = data.arcs(filename) or []
-        # print(filename)
-        # print(f"{sorted(arcs)=}")
         if not env.CHECK_ARCS:
             dests = collections.defaultdict(set)
             for fromno, tono in _arc_possibilities_set:
                 dests[fromno].add(tono)
             single_dests = {fromno: list(tonos)[0] for fromno, tonos in dests.items() if len(tonos) == 1}
-            double_dests = {fromno: sorted(tonos) for fromno, tonos in dests.items() if len(tonos) == 2}
-            seen_tonos = {to_lineno for from_lineno, to_lineno in arcs}
             new_arcs = set()
             for fromno, tono in arcs:
                 if fromno != tono:
                     new_arcs.add((fromno, tono))
                 elif fromno in single_dests:
                     new_arcs.add((fromno, single_dests[fromno]))
-                # elif fromno in double_dests and double_dests[fromno][0] == -1:
-                #     candidate_tono = double_dests[fromno][1]
-                #     if candidate_tono in seen_tonos:
-                #         new_arcs.add((fromno, candidate_tono))
             arcs = new_arcs
-        # print(f"{sorted(arcs)=}")
         _arcs_executed_set = file_reporter.translate_arcs(arcs)
-        # print(f"{sorted(_arcs_executed_set)=}")
         exit_counts = file_reporter.exit_counts()
-        # print(f"{sorted(exit_counts)=}")
         no_branch = file_reporter.no_branch_lines()
-        # print(f"{sorted(no_branch)=}")
     else:
         _arc_possibilities_set = set()
         _arcs_executed_set = set()
