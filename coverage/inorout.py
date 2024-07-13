@@ -309,6 +309,9 @@ class InOrOut:
             disp.reason = reason
             return disp
 
+        if original_filename is None:
+            return nope(disp, "got None as original file name")
+
         if original_filename.startswith("<"):
             return nope(disp, "original file name is not real")
 

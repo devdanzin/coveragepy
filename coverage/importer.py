@@ -73,7 +73,7 @@ class Instrumenter(MetaPathFinder):
                 continue
 
             spec = f.find_spec(fullname, path, target)
-            if spec is None or spec.loader is None:
+            if spec is None or spec.loader is None or spec.origin is None:
                 continue
 
             # can't instrument extension files
