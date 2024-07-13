@@ -236,6 +236,8 @@ class SysMonitor(TracerCore):
             register(events.PY_RETURN, self.sysmon_py_return_arcs)
             register(events.PY_UNWIND, self.sysmon_py_unwind_arcs)
             register(events.LINE, self.sysmon_line_arcs)
+            register(events.BRANCH, self.sysmon_branch_arcs)
+            register(events.JUMP, self.sysmon_jump_arcs)
         else:
             sys_monitoring.set_events(self.myid, events.PY_START)
             register(events.PY_START, self.sysmon_py_start)
@@ -351,9 +353,9 @@ class SysMonitor(TracerCore):
                             #
                             | events.PY_RESUME
                             # | events.PY_YIELD
-                            | events.LINE,
-                            # | events.BRANCH
-                            # | events.JUMP
+                            | events.LINE
+                            | events.BRANCH
+                            | events.JUMP
                         )
                         self.local_event_codes[id(code)] = code
 
@@ -417,10 +419,6 @@ class SysMonitor(TracerCore):
         """Handle sys.monitoring.events.LINE events for line coverage."""
         code_info = self.code_infos[id(code)]
         if code_info.file_data is not None:
-            # import contextlib
-            # with open("/tmp/foo.out", "a") as f:
-            #     with contextlib.redirect_stdout(f):
-            #         print(f"adding {line_number = }, {code = }")
             # TODO: if we can ensure instrumenting is only done when meaasuring
             # branches, then we don't need this check.
             if not is_branch(line_number):
@@ -432,9 +430,9 @@ class SysMonitor(TracerCore):
     def sysmon_line_arcs(self, code: CodeType, line_number: int) -> MonitorReturn:
         """Handle sys.monitoring.events.LINE events for branch coverage."""
         frame = self.callers_frame()
+        last_line = self.last_lines.get(frame, None)
         code_info = self.code_infos[id(code)]
         if code_info.file_data is not None:
-            was_branch = is_branch(line_number)
             if is_branch(line_number):
                 from_no, to_no = decode_branch(line_number)
                 if to_no == 0:
@@ -442,15 +440,25 @@ class SysMonitor(TracerCore):
                 arc = (from_no, to_no)
             else:
                 from_no = to_no = line_number
-                arc = None
-                arc = (from_no, to_no)
-            # self.last_lines[frame] = max(arc)
+                arc = (last_line or from_no, to_no)
+            self.last_lines[frame] = max(arc)
             if arc is not None:
                 cast(Set[TArc], code_info.file_data).add(arc)
-                # import contextlib
-                # with open("/tmp/foo.out", "a") as f:
-                #     with contextlib.redirect_stdout(f):
-                #         print(f"sysmon adding {arc = } was_branch: {was_branch}")
-            # log(f"adding {arc=}")
-            #self.last_lines[frame] = line_number
+        return sys.monitoring.DISABLE
+
+    @panopticon("code", "line")
+    def sysmon_branch_arcs(self, code: CodeType, instruction_offset: int, destination_offset: int):
+        """Handle sys.monitoring.events.BRANCH events for branch coverage."""
+        code_info = self.code_infos.get(id(code))
+        if code_info is not None and code_info.file_data is not None:
+            arc = decode_branch(code_info.byte_to_line[destination_offset])
+            cast(Set[TArc], code_info.file_data).add(arc)
+        return sys.monitoring.DISABLE
+
+    def sysmon_jump_arcs(self, code: CodeType, instruction_offset: int, destination_offset: int):
+        """Handle sys.monitoring.events.JUMP events for branch coverage."""
+        code_info = self.code_infos.get(id(code))
+        if code_info is not None and code_info.file_data is not None:
+            arc = decode_branch(code_info.byte_to_line[destination_offset])
+            cast(Set[TArc], code_info.file_data).add(arc)
         return sys.monitoring.DISABLE
