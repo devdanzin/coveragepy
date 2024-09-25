@@ -29,9 +29,11 @@ from coverage.types import (
     TArc,
     TFileDisposition,
     TLineNo,
+    TShouldStartContextFn,
+    TShouldTraceFn,
     TTraceData,
     TTraceFileData,
-    TracerCore,
+    Tracer,
     TWarnFn,
 )
 
@@ -171,7 +173,7 @@ def bytes_to_lines(code: CodeType) -> dict[int, int]:
     return b2l
 
 
-class SysMonitor(TracerCore):
+class SysMonitor(Tracer):
     """Python implementation of the raw data tracer for PEP669 implementations."""
 
     # One of these will be used across threads. Be careful.
@@ -180,12 +182,14 @@ class SysMonitor(TracerCore):
         # Attributes set from the collector:
         self.data: TTraceData
         self.trace_arcs = False
-        self.should_trace: Callable[[str, FrameType], TFileDisposition]
+        self.should_trace: TShouldTraceFn
         self.should_trace_cache: dict[str, TFileDisposition | None]
         # TODO: should_start_context and switch_context are unused!
         # Change tests/testenv.py:DYN_CONTEXTS when this is updated.
-        self.should_start_context: Callable[[FrameType], str | None] | None = None
+        self.should_start_context: TShouldStartContextFn | None = None
         self.switch_context: Callable[[str | None], None] | None = None
+        self.lock_data: Callable[[], None]
+        self.unlock_data: Callable[[], None]
         # TODO: warn is unused.
         self.warn: TWarnFn
 
@@ -200,6 +204,7 @@ class SysMonitor(TracerCore):
         # Map id(code_object) -> code_object
         self.local_event_codes: dict[int, CodeType] = {}
         self.sysmon_on = False
+        self.lock = threading.Lock()
 
         self.stats = {
             "starts": 0,
@@ -248,10 +253,11 @@ class SysMonitor(TracerCore):
             return
         assert sys_monitoring is not None
         sys_monitoring.set_events(self.myid, 0)
-        self.sysmon_on = False
-        for code in self.local_event_codes.values():
-            sys_monitoring.set_local_events(self.myid, code, 0)
-        self.local_event_codes = {}
+        with self.lock:
+            self.sysmon_on = False
+            for code in self.local_event_codes.values():
+                sys_monitoring.set_local_events(self.myid, code, 0)
+            self.local_event_codes = {}
         sys_monitoring.free_tool_id(self.myid)
 
     @panopticon()
@@ -315,8 +321,12 @@ class SysMonitor(TracerCore):
             if tracing_code:
                 tracename = disp.source_filename
                 assert tracename is not None
-                if tracename not in self.data:
-                    self.data[tracename] = set()
+                self.lock_data()
+                try:
+                    if tracename not in self.data:
+                        self.data[tracename] = set()
+                finally:
+                    self.unlock_data()
                 file_data = self.data[tracename]
                 b2l = bytes_to_lines(code)
             else:
@@ -332,20 +342,21 @@ class SysMonitor(TracerCore):
 
             if tracing_code:
                 events = sys.monitoring.events
-                if self.sysmon_on:
-                    assert sys_monitoring is not None
-                    sys_monitoring.set_local_events(
-                        self.myid,
-                        code,
-                        events.PY_RETURN
-                        #
-                        | events.PY_RESUME
-                        # | events.PY_YIELD
-                        | events.LINE,
-                        # | events.BRANCH
-                        # | events.JUMP
-                    )
-                    self.local_event_codes[id(code)] = code
+                with self.lock:
+                    if self.sysmon_on:
+                        assert sys_monitoring is not None
+                        sys_monitoring.set_local_events(
+                            self.myid,
+                            code,
+                            events.PY_RETURN
+                            #
+                            | events.PY_RESUME
+                            # | events.PY_YIELD
+                            | events.LINE,
+                            # | events.BRANCH
+                            # | events.JUMP
+                        )
+                        self.local_event_codes[id(code)] = code
 
         if tracing_code and self.trace_arcs:
             frame = self.callers_frame()

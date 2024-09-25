@@ -64,15 +64,6 @@ class PYBEHAVIOR:
     # 3.7 changed how functions with only docstrings are numbered.
     docstring_only_function = (not PYPY) and (PYVERSION <= (3, 10))
 
-    # When a break/continue/return statement in a try block jumps to a finally
-    # block, does the finally jump back to the break/continue/return (pre-3.10)
-    # to do the work?
-    finally_jumps_back = (PYVERSION < (3, 10))
-
-    # CPython 3.11 now jumps to the decorator line again while executing
-    # the decorator.
-    trace_decorator_line_again = (CPYTHON and PYVERSION > (3, 11, 0, "alpha", 3, 0))
-
     # CPython 3.9a1 made sys.argv[0] and other reported files absolute paths.
     report_absolute_files = (
         (CPYTHON or (PYPY and PYPYVERSION >= (7, 3, 10)))
@@ -108,21 +99,14 @@ class PYBEHAVIOR:
     # Some words are keywords in some places, identifiers in other places.
     soft_keywords = (PYVERSION >= (3, 10))
 
-    # Modules start with a line numbered zero. This means empty modules have
-    # only a 0-number line, which is ignored, giving a truly empty module.
-    empty_is_empty = (PYVERSION >= (3, 11, 0, "beta", 4))
-
-    # Are comprehensions inlined (new) or compiled as called functions (old)?
-    # Changed in https://github.com/python/cpython/pull/101441
-    comprehensions_are_functions = (PYVERSION <= (3, 12, 0, "alpha", 7, 0))
-
     # PEP669 Low Impact Monitoring: https://peps.python.org/pep-0669/
     pep669 = bool(getattr(sys, "monitoring", None))
 
     # Where does frame.f_lasti point when yielding from a generator?
-    # It used to point at the YIELD, now it points at the RESUME.
+    # It used to point at the YIELD, in 3.13 it points at the RESUME,
+    # then it went back to the YIELD.
     # https://github.com/python/cpython/issues/113728
-    lasti_is_yield = (PYVERSION < (3, 13))
+    lasti_is_yield = (PYVERSION[:2] != (3, 13))
 
 
 # Coverage.py specifics, about testing scenarios. See tests/testenv.py also.

@@ -321,6 +321,9 @@ def print_banner(label):
     if rev:
         version += f" (rev {rev})"
 
+    gil = "gil" if getattr(sys, '_is_gil_enabled', lambda: True)() else "nogil"
+    version += f" ({gil})"
+
     try:
         which_python = os.path.relpath(sys.executable)
     except ValueError:
@@ -473,6 +476,14 @@ def do_cheats():
         + f"cd {repo.partition('/')[-1]}\n"
         + f"git checkout {facts.sha}",
     )
+
+
+def do_copy_with_hash(*args):
+    """Copy files with a cache-busting hash.  Used in tests/gold/html/Makefile."""
+    from coverage.html import copy_with_cache_bust
+    *srcs, dest_dir = args
+    for src in srcs:
+        copy_with_cache_bust(src, dest_dir)
 
 
 def do_help():

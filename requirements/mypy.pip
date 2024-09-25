@@ -4,11 +4,11 @@
 #
 #    make upgrade
 #
-attrs==23.2.0
+attrs==24.2.0
     # via hypothesis
 colorama==0.4.6
     # via -r requirements/pytest.in
-exceptiongroup==1.2.1
+exceptiongroup==1.2.2
     # via
     #   hypothesis
     #   pytest
@@ -16,21 +16,21 @@ execnet==2.1.1
     # via pytest-xdist
 flaky==3.8.1
     # via -r requirements/pytest.in
-hypothesis==6.103.0
+hypothesis==6.112.1
     # via -r requirements/pytest.in
 iniconfig==2.0.0
     # via pytest
-mypy==1.10.0
+mypy==1.11.2
     # via -r requirements/mypy.in
 mypy-extensions==1.0.0
     # via mypy
-packaging==24.0
+packaging==24.1
     # via pytest
 pluggy==1.5.0
     # via pytest
 pygments==2.18.0
     # via -r requirements/pytest.in
-pytest==8.2.1
+pytest==8.3.3
     # via
     #   -r requirements/pytest.in
     #   pytest-xdist
@@ -42,5 +42,11 @@ tomli==2.0.1
     # via
     #   mypy
     #   pytest
-typing-extensions==4.12.0
+types-requests==2.32.0.20240914
+    # via -r requirements/mypy.in
+types-tabulate==0.9.0.20240106
+    # via -r requirements/mypy.in
+typing-extensions==4.12.2
     # via mypy
+urllib3==2.2.3
+    # via types-requests

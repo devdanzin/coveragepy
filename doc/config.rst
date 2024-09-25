@@ -75,7 +75,7 @@ TOML Syntax
 ...........
 
 `TOML syntax`_ uses explicit lists with brackets, and strings with quotes.
-Booleans are in ``true`` or ``false``.
+Booleans are ``true`` or ``false``.
 
 Configuration must be within the ``[tool.coverage]`` section, for example,
 ``[tool.coverage.run]``.  Environment variable expansion in values is
@@ -229,7 +229,7 @@ Here's a sample configuration file, in each syntax:
         directory = "coverage_html_report"
 
     .. code-tab:: ini
-        :caption: setup.cfg, tox.ini
+        :caption: setup.cfg or tox.ini
 
         [coverage:run]
         branch = True
@@ -257,7 +257,7 @@ Here's a sample configuration file, in each syntax:
         [coverage:html]
         directory = coverage_html_report
 
-.. [[[end]]] (checksum: 75c6c0c2ee170424cc1c18710e2b4919)
+.. [[[end]]] (checksum: 1d4d59eb69af44aacb77c9ebad869b65)
 
 
 The specific configuration settings are described below.  Many sections and
@@ -535,7 +535,7 @@ equivalent when combining data from different machines:
             ]
 
     .. code-tab:: ini
-        :caption: setup.cfg, tox.ini
+        :caption: setup.cfg or tox.ini
 
         [coverage:paths]
         source =
@@ -543,7 +543,7 @@ equivalent when combining data from different machines:
             /jenkins/build/*/src
             c:\myproj\src
 
-.. [[[end]]] (checksum: cf06ac36436db0c87be15a85223900d0)
+.. [[[end]]] (checksum: a074a5f121a23135dcb6733bca3e20bd)
 
 
 The names of the entries ("source" in this example) are ignored, you may choose
@@ -591,7 +591,7 @@ Settings common to many kinds of reporting.
 (multi-string) A list of regular expressions.  This setting is similar to
 :ref:`config_report_exclude_lines`: it specifies patterns for lines to exclude
 from reporting.  This setting is preferred, because it will preserve the
-default exclude patterns instead of overwriting them.
+default exclude pattern ``pragma: no cover`` instead of overwriting it.
 
 .. versionadded:: 7.2.0
 
@@ -886,7 +886,22 @@ Settings particular to LCOV reporting (see :ref:`cmd_lcov`).
 
 .. versionadded:: 6.3
 
+.. _config_lcov_output:
+
 [lcov] output
 .............
 
 (string, default "coverage.lcov") Where to write the LCOV file.
+
+.. _config_lcov_line_checksums:
+
+[lcov] line_checksums
+.....................
+
+(boolean, default false) Whether to write per-line checksums as part of the
+lcov file.  Because these checksums cover only lines with actual code on
+them, and do not verify the ordering of lines, they provide only a weak
+assurance that the source code available to analysis tools (e.g. ``genhtml``)
+matches the code that was used to generate the coverage data.
+
+.. versionadded:: 7.6.2

@@ -25,6 +25,7 @@ Artem Dayneko
 Arthur Deygin
 Arthur Rio
 Asher Foa
+Ask Hjorth Larsen
 Ben Carlsson
 Ben Finney
 Benjamin Parzella
@@ -92,6 +93,7 @@ George-Cristian Bîrzan
 Greg Rogers
 Guido van Rossum
 Guillaume Chazarain
+Guillaume Pujol
 Holger Krekel
 Hugo van Kemenade
 Ian Moore
@@ -104,6 +106,7 @@ JT Olds
 Jacqueline Lee
 Jakub Wilk
 James Valleroy
+Jan Kühle
 Jan Rusak
 Janakarajan Natarajan
 Jerin Peter George
@@ -133,6 +136,7 @@ Leonardo Pistone
 Lewis Gaul
 Lex Berezhny
 Liam DeVoe
+LiuYinCarl
 Loïc Dachary
 Lorenzo Micò
 Louis Heredero
@@ -144,6 +148,7 @@ Marc Abramowitz
 Marc Gibbons
 Marc Legendre
 Marcelo Trylesinski
+Marco Ricci
 Marcus Cobden
 Mariatta
 Marius Gedminas
@@ -229,4 +234,5 @@ Xie Yanbo
 Yilei "Dolee" Yang
 Yury Selivanov
 Zac Hatfield-Dodds
+Zack Weinberg
 Zooko Wilcox-O'Hearn

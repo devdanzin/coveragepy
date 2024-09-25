@@ -96,6 +96,8 @@ CTracer_dealloc(CTracer *self)
     Py_XDECREF(self->should_trace_cache);
     Py_XDECREF(self->should_start_context);
     Py_XDECREF(self->switch_context);
+    Py_XDECREF(self->lock_data);
+    Py_XDECREF(self->unlock_data);
     Py_XDECREF(self->context);
     Py_XDECREF(self->disable_plugin);
 
@@ -470,32 +472,56 @@ CTracer_handle_call(CTracer *self, PyFrameObject *frame)
     }
 
     if (tracename != Py_None) {
-        PyObject * file_data = PyDict_GetItem(self->data, tracename);
+        PyObject * file_data;
+        BOOL had_error = FALSE;
+        PyObject * res;
+
+        res = PyObject_CallFunctionObjArgs(self->lock_data, NULL);
+        if (res == NULL) {
+            goto error;
+        }
+
+        file_data = PyDict_GetItem(self->data, tracename);
 
         if (file_data == NULL) {
             if (PyErr_Occurred()) {
-                goto error;
+                had_error = TRUE;
+                goto unlock;
             }
             file_data = PySet_New(NULL);
             if (file_data == NULL) {
-                goto error;
+                had_error = TRUE;
+                goto unlock;
             }
             ret2 = PyDict_SetItem(self->data, tracename, file_data);
             if (ret2 < 0) {
-                goto error;
+                had_error = TRUE;
+                goto unlock;
             }
 
             /* If the disposition mentions a plugin, record that. */
             if (file_tracer != Py_None) {
                 ret2 = PyDict_SetItem(self->file_tracers, tracename, plugin_name);
                 if (ret2 < 0) {
-                    goto error;
+                    had_error = TRUE;
+                    goto unlock;
                 }
             }
         }
         else {
             /* PyDict_GetItem gives a borrowed reference. Own it. */
             Py_INCREF(file_data);
+        }
+
+        unlock:
+
+        res = PyObject_CallFunctionObjArgs(self->unlock_data, NULL);
+        if (res == NULL) {
+            goto error;
+        }
+
+        if (had_error) {
+            goto error;
         }
 
         Py_XDECREF(self->pcur_entry->file_data);
@@ -696,9 +722,9 @@ CTracer_handle_return(CTracer *self, PyFrameObject *frame)
     if (CTracer_set_pdata_stack(self) < 0) {
         goto error;
     }
-    self->pcur_entry = &self->pdata_stack->stack[self->pdata_stack->depth];
 
     if (self->pdata_stack->depth >= 0) {
+        self->pcur_entry = &self->pdata_stack->stack[self->pdata_stack->depth];
         if (self->tracing_arcs && self->pcur_entry->file_data) {
             BOOL real_return = FALSE;
             pCode = MyCode_GetCode(MyFrame_GetCode(frame));
@@ -1038,6 +1064,12 @@ CTracer_members[] = {
 
     { "switch_context",     T_OBJECT, offsetof(CTracer, switch_context), 0,
             PyDoc_STR("Function for switching to a new context.") },
+
+    { "lock_data",          T_OBJECT, offsetof(CTracer, lock_data), 0,
+            PyDoc_STR("Function for locking access to self.data.") },
+
+    { "unlock_data",        T_OBJECT, offsetof(CTracer, unlock_data), 0,
+            PyDoc_STR("Function for unlocking access to self.data.") },
 
     { "disable_plugin",     T_OBJECT, offsetof(CTracer, disable_plugin), 0,
             PyDoc_STR("Function for disabling a plugin.") },

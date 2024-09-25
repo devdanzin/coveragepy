@@ -23,10 +23,108 @@ upgrading your version of coverage.py.
 Unreleased
 ----------
 
-Nothing yet.
+- Fix: a final wildcard match/case clause assigning to a name (``case _ as
+  value``) was incorrectly marked as a missing branch.  This is now fixed,
+  closing `issue 1860`_.
+
+- Fewer things are considered branches now. Lambdas, comprehensions, and
+  generator expressions are no longer marked as missing branches if they don't
+  complete execution.
+
+- Fix: the HTML report didn't properly show multi-line f-strings that end with
+  a backslash continuation.  This is now fixed, closing `issue 1836`_, thanks
+  to `LiuYinCarl and Marco Ricci <pull 1838_>`_.
+
+- Fix: the LCOV report now has correct line numbers for BRDA records, fixing
+  `issue 1846`_.  There are other changes to lcov also, including a new
+  configuration option :ref:`line_checksums <config_lcov_line_checksums>` to
+  control whether line checksums are included in the lcov report.  The default
+  is false. To keep checksums set it to true.  All this work is thanks to `Zack
+  Weinberg <pull 1849_>`_.
+
+- Fixed a potential crash in the C tracer, closing `issue 1835`_, thanks to
+  `Jan Kühle <pull 1843_>`_.
+
+.. _issue 1835: https://github.com/nedbat/coveragepy/issues/1835
+.. _issue 1836: https://github.com/nedbat/coveragepy/issues/1836
+.. _pull 1838: https://github.com/nedbat/coveragepy/pull/1838
+.. _pull 1843: https://github.com/nedbat/coveragepy/pull/1843
+.. _issue 1846: https://github.com/nedbat/coveragepy/issues/1846
+.. _pull 1849: https://github.com/nedbat/coveragepy/pull/1849
+.. _issue 1860: https://github.com/nedbat/coveragepy/issues/1860
 
 
 .. scriv-start-here
+
+.. _changes_7-6-1:
+
+Version 7.6.1 — 2024-08-04
+--------------------------
+
+- Fix: coverage used to fail when measuring code using :func:`runpy.run_path
+  <python:runpy.run_path>` with a :class:`Path <python:pathlib.Path>` argument.
+  This is now fixed, thanks to `Ask Hjorth Larsen <pull 1819_>`_.
+
+- Fix: backslashes preceding a multi-line backslashed string could confuse the
+  HTML report.  This is now fixed, thanks to `LiuYinCarl <pull 1828_>`_.
+
+- Now we publish wheels for Python 3.13, both regular and free-threaded.
+
+.. _pull 1819: https://github.com/nedbat/coveragepy/pull/1819
+.. _pull 1828: https://github.com/nedbat/coveragepy/pull/1828
+
+
+.. _changes_7-6-0:
+
+Version 7.6.0 — 2024-07-11
+--------------------------
+
+- Exclusion patterns can now be multi-line, thanks to `Daniel Diniz <pull
+  1807_>`_.  This enables many interesting exclusion use-cases, including those
+  requested in issues `118 <issue 118_>`_ (entire files), `996
+  <issue 996_>`_ (multiple lines only when appearing together), `1741
+  <issue 1741_>`_ (remainder of a function), and `1803 <issue 1803_>`_
+  (arbitrary sequence of marked lines).  See the :ref:`multi_line_exclude`
+  section of the docs for more details and examples.
+
+- The JSON report now includes per-function and per-class coverage information.
+  Thanks to `Daniel Diniz <pull 1809_>`_ for getting the work started. This
+  closes `issue 1793`_ and `issue 1532`_.
+
+- Fixed an incorrect calculation of "(no class)" lines in the HTML classes
+  report.
+
+- Python 3.13.0b3 is supported.
+
+.. _issue 118: https://github.com/nedbat/coveragepy/issues/118
+.. _issue 996: https://github.com/nedbat/coveragepy/issues/996
+.. _issue 1532: https://github.com/nedbat/coveragepy/issues/1532
+.. _issue 1741: https://github.com/nedbat/coveragepy/issues/1741
+.. _issue 1793: https://github.com/nedbat/coveragepy/issues/1793
+.. _issue 1803: https://github.com/nedbat/coveragepy/issues/1803
+.. _pull 1807: https://github.com/nedbat/coveragepy/pull/1807
+.. _pull 1809: https://github.com/nedbat/coveragepy/pull/1809
+
+.. _changes_7-5-4:
+
+Version 7.5.4 — 2024-06-22
+--------------------------
+
+- If you attempt to combine statement coverage data with branch coverage data,
+  coverage.py used to fail with the message "Can't combine arc data with line
+  data" or its reverse, "Can't combine line data with arc data."  These
+  messages used internal terminology, making it hard for people to understand
+  the problem.  They are now changed to mention "branch coverage data" and
+  "statement coverage data."
+
+- Fixed a minor branch coverage problem with wildcard match/case cases using
+  names or guard clauses.
+
+- Started testing on 3.13 free-threading (nogil) builds of Python.  I'm not
+  claiming full support yet.  Closes `issue 1799`_.
+
+.. _issue 1799: https://github.com/nedbat/coveragepy/issues/1799
+
 
 .. _changes_7-5-3:
 

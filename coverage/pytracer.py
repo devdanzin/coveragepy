@@ -16,8 +16,16 @@ from typing import Any, Callable, Set, cast
 
 from coverage import env
 from coverage.types import (
-    TArc, TFileDisposition, TLineNo, TTraceData, TTraceFileData, TTraceFn,
-    TracerCore, TWarnFn,
+    TArc,
+    TFileDisposition,
+    TLineNo,
+    TShouldStartContextFn,
+    TShouldTraceFn,
+    TTraceData,
+    TTraceFileData,
+    TTraceFn,
+    TWarnFn,
+    Tracer,
 )
 
 # We need the YIELD_VALUE opcode below, in a comparison-friendly form.
@@ -36,7 +44,7 @@ else:
 
 THIS_FILE = __file__.rstrip("co")
 
-class PyTracer(TracerCore):
+class PyTracer(Tracer):
     """Python implementation of the raw data tracer."""
 
     # Because of poor implementations of trace-function-manipulating tools,
@@ -64,10 +72,12 @@ class PyTracer(TracerCore):
         # Attributes set from the collector:
         self.data: TTraceData
         self.trace_arcs = False
-        self.should_trace: Callable[[str, FrameType], TFileDisposition]
+        self.should_trace: TShouldTraceFn
         self.should_trace_cache: dict[str, TFileDisposition | None]
-        self.should_start_context: Callable[[FrameType], str | None] | None = None
+        self.should_start_context: TShouldStartContextFn | None = None
         self.switch_context: Callable[[str | None], None] | None = None
+        self.lock_data: Callable[[], None]
+        self.unlock_data: Callable[[], None]
         self.warn: TWarnFn
 
         # The threading module to use, if any.
@@ -209,8 +219,12 @@ class PyTracer(TracerCore):
                 if disp.trace:
                     tracename = disp.source_filename
                     assert tracename is not None
-                    if tracename not in self.data:
-                        self.data[tracename] = set()
+                    self.lock_data()
+                    try:
+                        if tracename not in self.data:
+                            self.data[tracename] = set()
+                    finally:
+                        self.unlock_data()
                     self.cur_file_data = self.data[tracename]
                 else:
                     frame.f_trace_lines = False

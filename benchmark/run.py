@@ -1,4 +1,23 @@
+import optparse
+from pathlib import Path
+
 from benchmark import *
+
+parser = optparse.OptionParser()
+parser.add_option(
+    "--clean",
+    action="store_true",
+    dest="clean",
+    default=False,
+    help="Delete the results.json file before running benchmarks"
+)
+options, args = parser.parse_args()
+
+if options.clean:
+    results_file = Path("results.json")
+    if results_file.exists():
+        results_file.unlink()
+        print("Deleted results.json")
 
 if 0:
     run_experiment(
@@ -53,26 +72,78 @@ if 0:
         ],
     )
 
-
-if 0:
-    # Compare 3.10 vs 3.12
-    v1 = 10
-    v2 = 12
+if 1:
+    # Compare N Python versions
+    vers = [10, 11, 12, 13]
     run_experiment(
-        py_versions=[
-            Python(3, v1),
-            Python(3, v2),
-        ],
+        py_versions=[Python(3, v) for v in vers],
         cov_versions=[
-            Coverage("732", "coverage==7.3.2"),
+            Coverage("761", "coverage==7.6.1"),
         ],
         projects=[
             ProjectMashumaro(),
+            ProjectPygments(),
+            ProjectMypy(),
         ],
         rows=["cov", "proj"],
         column="pyver",
         ratios=[
-            (f"3.{v2} vs 3.{v1}", f"python3.{v2}", f"python3.{v1}"),
+            (f"3.{b} vs 3.{a}", f"python3.{b}", f"python3.{a}")
+            for a, b in zip(vers, vers[1:])
+        ],
+    )
+
+if 0:
+    # Compare sysmon on many projects
+
+    run_experiment(
+        py_versions=[
+            Python(3, 12),
+        ],
+        cov_versions=[
+            NoCoverage("nocov"),
+            CoverageSource(slug="ctrace", env_vars={"COVERAGE_CORE": "ctrace"}),
+            CoverageSource(slug="sysmon", env_vars={"COVERAGE_CORE": "sysmon"}),
+        ],
+        projects=[
+            # ProjectSphinx(),  # Works, slow
+            ProjectPygments(),  # Works
+            # ProjectRich(),  # Doesn't work
+            # ProjectTornado(),  # Works, tests fail
+            # ProjectDulwich(),  # Works
+            # ProjectBlack(),  # Works, slow
+            # ProjectMpmath(),  # Works, slow
+            ProjectMypy(),  # Works, slow
+            # ProjectHtml5lib(),  # Works
+            # ProjectUrllib3(),  # Works
+        ],
+        rows=["pyver", "proj"],
+        column="cov",
+        ratios=[
+            (f"ctrace%", "ctrace", "nocov"),
+            (f"sysmon%", "sysmon", "nocov"),
+        ],
+        load=True,
+    )
+
+if 0:
+    # Compare current Coverage source against shipped version
+    run_experiment(
+        py_versions=[
+            Python(3, 11),
+        ],
+        cov_versions=[
+            Coverage("pip", "coverage"),
+            CoverageSource(slug="latest"),
+        ],
+        projects=[
+            ProjectMashumaro(),
+            ProjectOperator(),
+        ],
+        rows=["pyver", "proj"],
+        column="cov",
+        ratios=[
+            (f"Latest vs shipped", "latest", "pip"),
         ],
     )
 
@@ -87,40 +158,12 @@ if 0:
             Coverage("732", "coverage==7.3.2"),
             CoverageSource(
                 slug="sysmon",
-                directory="/Users/nbatchelder/coverage/trunk",
                 env_vars={"COVERAGE_CORE": "sysmon"},
             ),
         ],
         projects=[
             ProjectMashumaro(),     # small: "-k ck"
             ProjectOperator(),      # small: "-k irk"
-        ],
-        rows=["pyver", "proj"],
-        column="cov",
-        ratios=[
-            (f"732%", "732", "nocov"),
-            (f"sysmon%", "sysmon", "nocov"),
-        ],
-    )
-
-if 1:
-    # Compare 3.12 coverage vs no coverage
-    run_experiment(
-        py_versions=[
-            Python(3, 12),
-        ],
-        cov_versions=[
-            NoCoverage("nocov"),
-            Coverage("732", "coverage==7.3.2"),
-            CoverageSource(
-                slug="sysmon",
-                directory="/Users/nbatchelder/coverage/trunk",
-                env_vars={"COVERAGE_CORE": "sysmon"},
-            ),
-        ],
-        projects=[
-            ProjectMashumaro(),     # small: "-k ck"
-            ProjectMashumaroBranch(),     # small: "-k ck"
         ],
         rows=["pyver", "proj"],
         column="cov",

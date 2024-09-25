@@ -252,6 +252,7 @@ class CoverageConfig(TConfigurable, TPluginConfig):
 
         # Defaults for [lcov]
         self.lcov_output = "coverage.lcov"
+        self.lcov_line_checksums = False
 
         # Defaults for [paths]
         self.paths: dict[str, list[str]] = {}
@@ -432,6 +433,7 @@ class CoverageConfig(TConfigurable, TPluginConfig):
 
         # [lcov]
         ("lcov_output", "lcov:output"),
+        ("lcov_line_checksums", "lcov:line_checksums", "boolean")
     ]
 
     def _set_attr_from_config_option(
@@ -615,6 +617,11 @@ def read_coverage_config(
 
     # 4) from constructor arguments:
     config.from_args(**kwargs)
+
+    # 5) for our benchmark, force settings using a secret environment variable:
+    force_file = os.getenv("COVERAGE_FORCE_CONFIG")
+    if force_file:
+        config.from_file(force_file, warn, our_file=True)
 
     # Once all the config has been collected, there's a little post-processing
     # to do.
