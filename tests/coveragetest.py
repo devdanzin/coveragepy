@@ -31,6 +31,7 @@ from coverage.types import TArc, TLineNo
 from tests.helpers import arcz_to_arcs, assert_count_equal
 from tests.helpers import nice_file, run_command
 from tests.mixins import PytestBase, StdStreamCapturingMixin, RestoreModulesMixin, TempDirMixin
+from tests import testenv
 
 
 # Status returns for the command line.
@@ -87,6 +88,10 @@ class CoverageTest(
         self.last_command_output: str | None = None
         self.last_module_name: str | None = None
 
+    # The last set of captured events from start_import_stop, if any.
+    # Used by check_coverage for replay validation.
+    _sysmon_captured_events: list[dict[str, Any]] | None = None
+
     def start_import_stop(
         self,
         cov: Coverage,
@@ -101,20 +106,21 @@ class CoverageTest(
 
         The imported module is returned.
 
+        When running under the sysmon core, this also captures the
+        sys.monitoring events using a separate tool_id, storing them
+        in `self._sysmon_captured_events` for replay validation.
+
         """
-        # Here's something I don't understand. I tried changing the code to use
-        # the handy context manager, like this:
-        #
-        #   with cov.collect():
-        #       # Import the Python file, executing it.
-        #       return import_local_file(modname, modfile)
-        #
-        # That seemed to work, until 7.4.0 when it made metacov fail after
-        # running all the tests.  The deep recursion tests in test_oddball.py
-        # seemed to cause something to be off so that a "Trace function
-        # changed" error would happen as pytest was cleaning up, failing the
-        # metacov runs.  Putting back the old code below fixes it, but I don't
-        # understand the difference.
+        self._sysmon_captured_events = None
+        capture = None
+
+        # Capture events alongside SysMonitor when using sysmon core
+        if testenv.SYS_MON:
+            from tests.sysmon_harness import EventCapture
+
+            target_file = os.path.abspath(modfile or (modname + ".py"))
+            capture = EventCapture()
+            capture.start(target_file)
 
         cov.start()
         try:  # pragma: nested
@@ -123,6 +129,8 @@ class CoverageTest(
         finally:  # pragma: nested
             # Stop coverage.py.
             cov.stop()
+            if capture is not None:
+                self._sysmon_captured_events = capture.stop()
         return mod
 
     def get_report(
@@ -235,7 +243,64 @@ class CoverageTest(
             rep = " ".join(frep.getvalue().split("\n")[2].split()[1:])
             assert report == rep, f"{report!r} != {rep!r}"
 
+        # Replay validation: when running under sysmon, verify that
+        # replaying the captured events through a fresh SysMonitor
+        # produces the same coverage data as the live run.
+        if self._sysmon_captured_events:
+            self._validate_sysmon_replay(cov, mod, branch)
+
         return cov
+
+    def _validate_sysmon_replay(
+        self,
+        cov: Coverage,
+        mod: ModuleType,
+        branch: bool,
+    ) -> None:
+        """Replay captured sysmon events and compare to the live run."""
+        from tests.sysmon_harness import SysMonitorReplay
+
+        # Get the real coverage data
+        data = cov.get_data()
+        mod_filename: str | None = None
+        real_data: set[Any] = set()
+        for measured_file in data.measured_files():
+            if os.path.basename(measured_file).startswith("coverage_test_"):
+                mod_filename = measured_file
+                if branch:
+                    arcs = data.arcs(measured_file)
+                    if arcs is not None:
+                        real_data = set(arcs)
+                else:
+                    file_lines = data.lines(measured_file)
+                    if file_lines is not None:
+                        real_data = set(file_lines)
+                break
+
+        if mod_filename is None or not self._sysmon_captured_events:
+            return
+
+        # Compile the source to get code objects for replay
+        source_file = mod.__file__
+        assert source_file is not None
+        with open(source_file, encoding="utf-8") as f:
+            source = f.read()
+        code = compile(source, mod_filename, "exec", dont_inherit=True)
+
+        # Replay the captured events through a fresh SysMonitor
+        replay = SysMonitorReplay(
+            filename=mod_filename,
+            code=code,
+            trace_arcs=branch,
+        )
+        replay_data = replay.replay(self._sysmon_captured_events)
+        replayed = replay_data.get(mod_filename, set())
+
+        assert replayed == real_data, (
+            f"Sysmon replay mismatch:\n"
+            f"  extra in replay:   {sorted(replayed - real_data)}\n"
+            f"  missing in replay: {sorted(real_data - replayed)}"
+        )
 
     def make_data_file(
         self,
