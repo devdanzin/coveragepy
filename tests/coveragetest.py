@@ -111,6 +111,19 @@ class CoverageTest(
         in `self._sysmon_captured_events` for replay validation.
 
         """
+        # Here's something I don't understand. I tried changing the code to use
+        # the handy context manager, like this:
+        #
+        #   with cov.collect():
+        #       # Import the Python file, executing it.
+        #       return import_local_file(modname, modfile)
+        #
+        # That seemed to work, until 7.4.0 when it made metacov fail after
+        # running all the tests.  The deep recursion tests in test_oddball.py
+        # seemed to cause something to be off so that a "Trace function
+        # changed" error would happen as pytest was cleaning up, failing the
+        # metacov runs.  Putting back the old code below fixes it, but I don't
+        # understand the difference.
         self._sysmon_captured_events = None
         capture = None
 
