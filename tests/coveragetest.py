@@ -259,8 +259,12 @@ class CoverageTest(
         # Replay validation: when running under sysmon, verify that
         # replaying the captured events through a fresh SysMonitor
         # produces the same coverage data as the live run.
-        if self._sysmon_captured_events:
-            self._validate_sysmon_replay(cov, mod, branch)
+        if self._sysmon_captured_events is not None:
+            assert self._sysmon_captured_events, (
+                "EventCapture returned zero events under sysmon — "
+                "filename filter may not have matched"
+            )
+            self._validate_sysmon_replay(cov, mod, branch, text)
 
         return cov
 
@@ -269,6 +273,7 @@ class CoverageTest(
         cov: Coverage,
         mod: ModuleType,
         branch: bool,
+        source_text: str,
     ) -> None:
         """Replay captured sysmon events and compare to the live run."""
         from tests.sysmon_harness import SysMonitorReplay
@@ -290,24 +295,27 @@ class CoverageTest(
                         real_data = set(file_lines)
                 break
 
-        if mod_filename is None or not self._sysmon_captured_events:
-            return
+        assert mod_filename is not None, (
+            "No coverage_test_* file found in measured files: "
+            f"{sorted(data.measured_files())}"
+        )
 
-        # Compile the source to get code objects for replay
-        source_file = mod.__file__
-        assert source_file is not None
-        with open(source_file, encoding="utf-8") as f:
-            source = f.read()
-        code = compile(source, mod_filename, "exec", dont_inherit=True)
+        # Use the source text directly rather than re-reading from disk.
+        # Dedent to match what make_file writes.
+        import textwrap
 
-        # Replay the captured events through a fresh SysMonitor
-        replay = SysMonitorReplay(
+        code = compile(
+            textwrap.dedent(source_text), mod_filename, "exec", dont_inherit=True
+        )
+
+        # Replay the captured events through a fresh SysMonitor.
+        with SysMonitorReplay(
             filename=mod_filename,
             code=code,
             trace_arcs=branch,
-        )
-        replay_data = replay.replay(self._sysmon_captured_events)
-        replayed = replay_data.get(mod_filename, set())
+        ) as replay:
+            replay_data = replay.replay(self._sysmon_captured_events)
+            replayed = replay_data.get(mod_filename, set())
 
         assert replayed == real_data, (
             f"Sysmon replay mismatch:\n"

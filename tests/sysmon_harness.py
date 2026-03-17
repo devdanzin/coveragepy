@@ -50,15 +50,18 @@ class EventCapture:
 
         self.events: list[dict[str, Any]] = []
         self.target_filename: str | None = None
+        self._started = False
 
     def start(self, target_filename: str) -> None:
         """Start capturing events for the given target filename."""
         self.events = []
         self.target_filename = target_filename
 
+        # SysMonitor does not process PY_RESUME events, so we don't
+        # capture them.  If SysMonitor adds PY_RESUME handling in the
+        # future, add it here too.
         local_events = (
             self._events_cls.PY_RETURN
-            | self._events_cls.PY_RESUME
             | self._events_cls.LINE
         )
         if self._has_branch_right_left:
@@ -68,26 +71,39 @@ class EventCapture:
         self._local_events = local_events
 
         self._monitoring.use_tool_id(self.tool_id, "sysmon-capture")
-        register = functools.partial(
-            self._monitoring.register_callback, self.tool_id
-        )
+        try:
+            register = functools.partial(
+                self._monitoring.register_callback, self.tool_id
+            )
 
-        self._monitoring.set_events(
-            self.tool_id, self._events_cls.PY_START
-        )
-        register(self._events_cls.PY_START, self._on_py_start)
-        register(self._events_cls.PY_RESUME, self._on_py_resume)
-        register(self._events_cls.PY_RETURN, self._on_py_return)
-        register(self._events_cls.LINE, self._on_line)
-        if self._has_branch_right_left:
-            register(self._events_cls.BRANCH_RIGHT, self._on_branch_right)
-            register(self._events_cls.BRANCH_LEFT, self._on_branch_left)
-        self._monitoring.restart_events()
+            self._monitoring.set_events(
+                self.tool_id, self._events_cls.PY_START
+            )
+            register(self._events_cls.PY_START, self._on_py_start)
+            register(self._events_cls.PY_RETURN, self._on_py_return)
+            register(self._events_cls.LINE, self._on_line)
+            if self._has_branch_right_left:
+                register(self._events_cls.BRANCH_RIGHT, self._on_branch_right)
+                register(self._events_cls.BRANCH_LEFT, self._on_branch_left)
+            self._monitoring.restart_events()
+            self._started = True
+        except BaseException:
+            # Clean up the tool_id if registration partially failed.
+            try:
+                self._monitoring.set_events(self.tool_id, 0)
+            finally:
+                self._monitoring.free_tool_id(self.tool_id)
+            raise
 
     def stop(self) -> list[dict[str, Any]]:
         """Stop capturing and return the recorded events."""
-        self._monitoring.set_events(self.tool_id, 0)
-        self._monitoring.free_tool_id(self.tool_id)
+        if not self._started:
+            return self.events
+        self._started = False
+        try:
+            self._monitoring.set_events(self.tool_id, 0)
+        finally:
+            self._monitoring.free_tool_id(self.tool_id)
         return self.events
 
     def _record(
@@ -117,9 +133,6 @@ class EventCapture:
                 self.tool_id, code, self._local_events
             )
 
-    def _on_py_resume(self, code: CodeType, offset: int) -> None:
-        self._record("PY_RESUME", code, offset=offset)
-
     def _on_py_return(self, code: CodeType, offset: int, retval: object) -> None:
         self._record("PY_RETURN", code, offset=offset)
 
@@ -140,6 +153,12 @@ class SysMonitorReplay:
     events into its callback methods, and returns the collected data.
     The result can be compared against real coverage data to verify
     that replaying produces the same output as a live run.
+
+    Use as a context manager to ensure cleanup of the patched
+    sys_monitoring global::
+
+        with SysMonitorReplay(filename, code, trace_arcs) as replay:
+            data = replay.replay(events)
     """
 
     def __init__(
@@ -154,8 +173,12 @@ class SysMonitorReplay:
         # Build code object map from the compiled code
         self.code_map = self._build_code_map(code)
 
-        # Create a SysMonitor with stubs
-        self.monitor = SysMonitor(tool_id=1)
+        # Collect warnings for diagnostic purposes
+        self.warnings: list[str] = []
+
+        # Create a SysMonitor with stubs.  Use a test-only tool_id
+        # (not 1 or 3 which coverage.py uses in production).
+        self.monitor = SysMonitor(tool_id=5)
         self.monitor.data = {}
         self.monitor.trace_arcs = trace_arcs
         self.monitor.should_trace_cache = {
@@ -163,24 +186,49 @@ class SysMonitorReplay:
         }
         self.monitor.lock_data = lambda: None
         self.monitor.unlock_data = lambda: None
-        self.monitor.warn = lambda msg, slug="", once=False: None
+        self.monitor.warn = lambda msg, slug="", once=False: self.warnings.append(msg)
 
-        # Patch sys_monitoring to no-ops during replay
-        import coverage.sysmon as sysmon_module
+        self._patched = False
 
-        self._orig_sys_monitoring = sysmon_module.sys_monitoring
-        mock_monitoring = MagicMock()
-        mock_monitoring.DISABLE = None
-        sysmon_module.sys_monitoring = mock_monitoring
+    def __enter__(self) -> SysMonitorReplay:
+        self._patch()
+        return self
+
+    def __exit__(self, *exc_info: object) -> None:
+        self._unpatch()
+
+    def _patch(self) -> None:
+        """Replace sys_monitoring with a mock for replay."""
+        if not self._patched:
+            import coverage.sysmon as sysmon_module
+
+            self._orig_sys_monitoring = sysmon_module.sys_monitoring
+            mock_monitoring = MagicMock()
+            mock_monitoring.DISABLE = None
+            sysmon_module.sys_monitoring = mock_monitoring
+            self._patched = True
+
+    def _unpatch(self) -> None:
+        """Restore the original sys_monitoring reference."""
+        if self._patched:
+            import coverage.sysmon as sysmon_module
+
+            sysmon_module.sys_monitoring = self._orig_sys_monitoring
+            self._patched = False
 
     def replay(self, events: list[dict[str, Any]]) -> dict[str, set[Any]]:
         """Feed events into SysMonitor's callbacks, return collected data."""
         arc_only_types = {"PY_RETURN", "BRANCH_RIGHT", "BRANCH_LEFT"}
+        skipped: list[str] = []
 
+        self._patch()
         try:
             for ev in events:
                 code = self._resolve_code(ev)
                 if code is None:
+                    skipped.append(
+                        f"{ev['type']} {ev['code_name']}:{ev['code_firstlineno']}"
+                    )
                     continue
 
                 event_type = ev["type"]
@@ -204,15 +252,16 @@ class SysMonitorReplay:
                         code, ev["offset"], ev["dest"]
                     )
         finally:
-            self._cleanup()
+            self._unpatch()
+
+        if skipped:
+            raise RuntimeError(
+                f"Replay dropped {len(skipped)} events with "
+                f"unresolvable code objects:\n  "
+                + "\n  ".join(skipped[:20])
+            )
 
         return self.monitor.data
-
-    def _cleanup(self) -> None:
-        """Restore the original sys_monitoring reference."""
-        import coverage.sysmon as sysmon_module
-
-        sysmon_module.sys_monitoring = self._orig_sys_monitoring
 
     def _build_code_map(self, code: CodeType) -> dict[str, CodeType]:
         """Build a map of (name:firstlineno) -> CodeType."""

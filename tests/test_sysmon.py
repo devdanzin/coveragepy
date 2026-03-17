@@ -22,7 +22,6 @@ import pytest
 
 from coverage import env
 from tests.sysmon_harness import EventCapture, SysMonitorReplay
-from coverage.sysmon import SysMonitor
 
 
 @pytest.mark.skipif(
@@ -38,59 +37,54 @@ class SysMonitorLifecycleTest:
         )
 
     def test_activity_flag_starts_false(self) -> None:
-        replay = self._make_replay()
-        assert replay.monitor.activity() is False
-        replay._cleanup()
+        with self._make_replay() as replay:
+            assert replay.monitor.activity() is False
 
     def test_activity_flag_set_on_py_start(self) -> None:
-        replay = self._make_replay()
-        code = compile("a = 1\n", "target.py", "exec")
-        replay.monitor.sysmon_py_start(code, 0)
-        assert replay.monitor.activity() is True
-        replay._cleanup()
+        with self._make_replay() as replay:
+            code = compile("a = 1\n", "target.py", "exec")
+            replay.monitor.sysmon_py_start(code, 0)
+            assert replay.monitor.activity() is True
 
     def test_reset_activity(self) -> None:
-        replay = self._make_replay()
-        replay.monitor._activity = True
-        replay.monitor.reset_activity()
-        assert replay.monitor.activity() is False
-        replay._cleanup()
+        with self._make_replay() as replay:
+            replay.monitor._activity = True
+            replay.monitor.reset_activity()
+            assert replay.monitor.activity() is False
 
     def test_code_info_caching(self) -> None:
         """Second PY_START for same code should use cached CodeInfo."""
-        replay = self._make_replay()
-        code = compile("a = 1\n", "target.py", "exec")
-        replay.monitor.sysmon_py_start(code, 0)
-        assert id(code) in replay.monitor.code_infos
-        info_before = replay.monitor.code_infos[id(code)]
-        replay.monitor.sysmon_py_start(code, 0)
-        info_after = replay.monitor.code_infos[id(code)]
-        assert info_before is info_after
-        replay._cleanup()
+        with self._make_replay() as replay:
+            code = compile("a = 1\n", "target.py", "exec")
+            replay.monitor.sysmon_py_start(code, 0)
+            assert id(code) in replay.monitor.code_infos
+            info_before = replay.monitor.code_infos[id(code)]
+            replay.monitor.sysmon_py_start(code, 0)
+            info_after = replay.monitor.code_infos[id(code)]
+            assert info_before is info_after
 
     def test_non_traced_file_no_data(self) -> None:
         """Files not in should_trace_cache should not be traced."""
-        replay = self._make_replay()
-        replay.monitor.should_trace_cache.clear()
+        with self._make_replay() as replay:
+            replay.monitor.should_trace_cache.clear()
 
-        from coverage.disposition import FileDisposition
+            from coverage.disposition import FileDisposition
 
-        def should_trace(filename, frame):
-            disp = FileDisposition()
-            disp.original_filename = filename
-            disp.canonical_filename = filename
-            disp.source_filename = None
-            disp.trace = False
-            disp.reason = "test"
-            disp.file_tracer = None
-            disp.has_dynamic_filename = False
-            return disp
+            def should_trace(filename, frame):
+                disp = FileDisposition()
+                disp.original_filename = filename
+                disp.canonical_filename = filename
+                disp.source_filename = None
+                disp.trace = False
+                disp.reason = "test"
+                disp.file_tracer = None
+                disp.has_dynamic_filename = False
+                return disp
 
-        replay.monitor.should_trace = should_trace
-        code = compile("a = 1\n", "target.py", "exec")
-        replay.monitor.sysmon_py_start(code, 0)
-        assert not replay.monitor.data
-        replay._cleanup()
+            replay.monitor.should_trace = should_trace
+            code = compile("a = 1\n", "target.py", "exec")
+            replay.monitor.sysmon_py_start(code, 0)
+            assert not replay.monitor.data
 
 
 @pytest.mark.skipif(
@@ -121,23 +115,24 @@ class SysMonitorCaptureReplayTest:
         try:
             capture = EventCapture()
             capture.start(tmpfile)
-
-            cov = coverage.Coverage(branch=branch)
-            cov.start()
             try:
-                exec(  # noqa: S102
-                    compile(source, tmpfile, "exec"),
-                    {"__name__": "__main__"},
-                )
+                cov = coverage.Coverage(branch=branch)
+                cov.start()
+                try:
+                    exec(  # noqa: S102
+                        compile(source, tmpfile, "exec"),
+                        {"__name__": "__main__"},
+                    )
+                finally:
+                    cov.stop()
             finally:
-                cov.stop()
                 events = capture.stop()
 
             # Get real data
             data = cov.get_data()
             real_data: set = set()
             for measured_file in data.measured_files():
-                if tmpfile in measured_file:
+                if os.path.abspath(measured_file) == os.path.abspath(tmpfile):
                     if branch:
                         arcs = data.arcs(measured_file)
                         if arcs is not None:
@@ -150,11 +145,11 @@ class SysMonitorCaptureReplayTest:
 
             # Replay
             code = compile(source, tmpfile, "exec")
-            replay = SysMonitorReplay(
+            with SysMonitorReplay(
                 filename=tmpfile, code=code, trace_arcs=branch
-            )
-            replay_data = replay.replay(events)
-            replayed = replay_data.get(tmpfile, set())
+            ) as replay:
+                replay_data = replay.replay(events)
+                replayed = replay_data.get(tmpfile, set())
 
             assert replayed == real_data, (
                 f"Replay mismatch:\n"
